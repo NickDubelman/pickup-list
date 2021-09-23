@@ -5,7 +5,7 @@
 
 	function handleSubmit() {
 		if (password === 'yekshimesh') {
-			goto('/lists')
+			goto('/profile')
 		} else {
 			alert('wrong password')
 		}
