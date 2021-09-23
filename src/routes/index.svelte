@@ -1,10 +1,14 @@
 <script>
 	import { goto } from '$app/navigation'
 
-	function handleSubmit() {
-		// TODO: check if the password is correct
+	let password = ''
 
-		goto('/lists')
+	function handleSubmit() {
+		if (password === 'yekshimesh') {
+			goto('/lists')
+		} else {
+			alert('wrong password')
+		}
 	}
 </script>
 
@@ -14,9 +18,9 @@
 
 	<form on:submit|preventDefault={handleSubmit}>
 		<p>Enter the secret password</p>
-		<input type="text" />
+		<input type="password" bind:value={password} />
 
-		<button type="submit">Go</button>
+		<button type="submit" disabled={password === ''}>Go</button>
 	</form>
 </div>
 
