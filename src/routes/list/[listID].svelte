@@ -1,7 +1,5 @@
 <script>
   import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { onMount } from 'svelte'
 
   import { lists } from '$lib/stores/lists'
   import { profile } from '$lib/stores/profile'
