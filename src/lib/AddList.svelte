@@ -1,9 +1,13 @@
 <script>
+	import { lists } from '$lib/stores/lists'
+
 	let adding = false
 	let listName = ''
 
 	function handleSubmit() {
-		alert(`submit ${listName.trim()}`)
+		const id = Math.max(...$lists.map((list) => list.id)) + 1
+		lists.update((prev) => [...prev, { id, name: listName.trim() }])
+		onCancelAdd()
 	}
 
 	function onCancelAdd() {

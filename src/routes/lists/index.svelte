@@ -1,5 +1,6 @@
 <script>
 	import AddList from '$lib/AddList.svelte'
+	import { lists } from '$lib/stores/lists'
 </script>
 
 <h1>Lists for this week</h1>
@@ -7,7 +8,9 @@
 
 <AddList />
 
-<a href="/list/1">First list</a>
+{#each $lists as { id, name }}
+	<a href={`/list/${id}`}>{name}</a>
+{/each}
 
 <style>
 	h1 {
@@ -15,5 +18,11 @@
 	}
 	h3 {
 		margin-top: 4px;
+	}
+
+	a {
+		display: block;
+		font-size: 1.24em;
+		margin-top: 8px;
 	}
 </style>
