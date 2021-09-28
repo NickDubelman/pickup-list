@@ -9,7 +9,6 @@
 		if ($lists.length > 0) {
 			id = Math.max(...$lists.map(list => list.id)) + 1
 		}
-
 		lists.addList(id, listName)
 		onCancelAdd()
 	}
