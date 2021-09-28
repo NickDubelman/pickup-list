@@ -1,10 +1,13 @@
 import { writable } from 'svelte/store'
 
+interface List {
+	id: number
+	name: string
+	people: { realName: string; nbaName: string }[]
+}
+
 function createLists() {
-	const { subscribe, set, update } = writable([
-		{ id: 1, name: 'First list', people: [] },
-		{ id: 2, name: 'Second list', people: [] }
-	])
+	const { subscribe, update } = writable<List[]>([])
 
 	return {
 		subscribe,

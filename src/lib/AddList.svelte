@@ -5,7 +5,11 @@
 	let listName = ''
 
 	function handleSubmit() {
-		const id = Math.max(...$lists.map((list) => list.id)) + 1
+		let id = 1
+		if ($lists.length > 0) {
+			id = Math.max(...$lists.map(list => list.id)) + 1
+		}
+
 		lists.addList(id, listName)
 		onCancelAdd()
 	}
