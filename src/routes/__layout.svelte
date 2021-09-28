@@ -2,6 +2,10 @@
 	import Nav from '$lib/Nav.svelte'
 </script>
 
+<svelte:head>
+	<title>Pickup List</title>
+</svelte:head>
+
 <Nav />
 
 <div>
