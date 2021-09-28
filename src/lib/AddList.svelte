@@ -6,7 +6,7 @@
 
 	function handleSubmit() {
 		const id = Math.max(...$lists.map((list) => list.id)) + 1
-		lists.update((prev) => [...prev, { id, name: listName.trim() }])
+		lists.addList(id, listName)
 		onCancelAdd()
 	}
 
