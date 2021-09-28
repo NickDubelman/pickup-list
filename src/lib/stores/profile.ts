@@ -6,8 +6,7 @@ export interface Profile {
 }
 
 function createProfile() {
-	const { subscribe, set, update } = writable<Profile>(null)
-
+	const { subscribe, set } = writable<Profile>(null)
 	return { subscribe, set }
 }
 

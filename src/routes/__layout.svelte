@@ -1,19 +1,19 @@
 <script>
-	import Nav from '$lib/Nav.svelte'
+  import Nav from '$lib/Nav.svelte'
 </script>
 
 <svelte:head>
-	<title>Pickup List</title>
+  <title>Pickup List</title>
 </svelte:head>
 
 <Nav />
 
 <div>
-	<slot />
+  <slot />
 </div>
 
 <style>
-	div {
-		padding: 12px 48px;
-	}
+  div {
+    padding: 12px 48px;
+  }
 </style>
