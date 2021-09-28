@@ -7,10 +7,13 @@
 <h3>Monday September 20 ➜ Sunday September 26</h3>
 
 <AddList />
-
-{#each $lists as { id, name }}
-	<a href={`/list/${id}`}>{name}</a>
-{/each}
+{#if $lists.length > 0}
+	{#each $lists as { id, name }}
+		<a href={`/list/${id}`}>{name}</a>
+	{/each}
+{:else}
+	<div>No lists have been added yet</div>
+{/if}
 
 <style>
 	h1 {

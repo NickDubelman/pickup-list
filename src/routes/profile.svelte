@@ -1,14 +1,16 @@
 <script>
 	import { goto } from '$app/navigation'
 
-	const players = ['Lebron James', 'Anthony Davis']
+	import { profile } from '$lib/stores/profile'
 
-	let realName = ''
-	let nbaName = ''
+	const players = ['Lebron James', 'Anthony Davis', 'Robert Sacre']
+
+	let realName = $profile ? $profile.realName : ''
+	let nbaName = $profile ? $profile.nbaName : ''
 	$: canSubmit = realName !== '' && nbaName !== ''
 
 	function handleSubmit() {
-		alert(`submit ${realName} (${nbaName})`)
+		profile.set({ realName, nbaName })
 		goto('/lists')
 	}
 </script>
