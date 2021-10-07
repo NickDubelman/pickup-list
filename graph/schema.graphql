@@ -1,0 +1,36 @@
+interface Node {
+  id: ID!
+}
+
+type User implements Node {
+  id: ID!
+  real_name: String!
+  nba_name: String!
+  created_at: Time!
+
+  lists: [List!]!
+}
+
+type List implements Node {
+  id: ID!
+  name: String!
+  created_at: Time!
+
+  owner: User!
+}
+
+type Query {
+  lists: [List!]!
+  node(id: ID!): Node
+  nodes(ids: [ID!]!): [Node]!
+}
+
+type Mutation {
+  createList(input: CreateListInput!): List!
+}
+
+input CreateListInput {
+  name: String!
+}
+
+scalar Time
