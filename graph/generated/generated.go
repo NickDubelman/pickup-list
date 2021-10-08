@@ -51,10 +51,12 @@ type ComplexityRoot struct {
 		ID        func(childComplexity int) int
 		Name      func(childComplexity int) int
 		Owner     func(childComplexity int) int
+		Users     func(childComplexity int) int
 	}
 
 	Mutation struct {
 		CreateList func(childComplexity int, input model.CreateListInput) int
+		JoinList   func(childComplexity int, input model.JoinListInput) int
 	}
 
 	Query struct {
@@ -74,6 +76,7 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreateList(ctx context.Context, input model.CreateListInput) (*db.List, error)
+	JoinList(ctx context.Context, input model.JoinListInput) (*db.List, error)
 }
 type QueryResolver interface {
 	Lists(ctx context.Context) ([]*db.List, error)
@@ -124,6 +127,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.List.Owner(childComplexity), true
 
+	case "List.users":
+		if e.complexity.List.Users == nil {
+			break
+		}
+
+		return e.complexity.List.Users(childComplexity), true
+
 	case "Mutation.createList":
 		if e.complexity.Mutation.CreateList == nil {
 			break
@@ -135,6 +145,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateList(childComplexity, args["input"].(model.CreateListInput)), true
+
+	case "Mutation.joinList":
+		if e.complexity.Mutation.JoinList == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_joinList_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.JoinList(childComplexity, args["input"].(model.JoinListInput)), true
 
 	case "Query.lists":
 		if e.complexity.Query.Lists == nil {
@@ -284,6 +306,7 @@ type List implements Node {
   name: String!
   created_at: Time!
 
+  users: [User!]!
   owner: User!
 }
 
@@ -295,10 +318,15 @@ type Query {
 
 type Mutation {
   createList(input: CreateListInput!): List!
+  joinList(input: JoinListInput!): List!
 }
 
 input CreateListInput {
   name: String!
+}
+
+input JoinListInput {
+  listID: ID!
 }
 
 scalar Time
@@ -317,6 +345,21 @@ func (ec *executionContext) field_Mutation_createList_args(ctx context.Context, 
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNCreateListInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐCreateListInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_joinList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.JoinListInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNJoinListInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐJoinListInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -513,6 +556,41 @@ func (ec *executionContext) _List_created_at(ctx context.Context, field graphql.
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _List_users(ctx context.Context, field graphql.CollectedField, obj *db.List) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "List",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Users(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*db.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUserᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _List_owner(ctx context.Context, field graphql.CollectedField, obj *db.List) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -574,6 +652,48 @@ func (ec *executionContext) _Mutation_createList(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().CreateList(rctx, args["input"].(model.CreateListInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.List)
+	fc.Result = res
+	return ec.marshalNList2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐList(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_joinList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_joinList_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().JoinList(rctx, args["input"].(model.JoinListInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2097,6 +2217,29 @@ func (ec *executionContext) unmarshalInputCreateListInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputJoinListInput(ctx context.Context, obj interface{}) (model.JoinListInput, error) {
+	var it model.JoinListInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "listID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("listID"))
+			it.ListID, err = ec.unmarshalNID2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2150,6 +2293,20 @@ func (ec *executionContext) _List(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "users":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._List_users(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "owner":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -2192,6 +2349,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = graphql.MarshalString("Mutation")
 		case "createList":
 			out.Values[i] = ec._Mutation_createList(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "joinList":
+			out.Values[i] = ec._Mutation_joinList(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2652,6 +2814,11 @@ func (ec *executionContext) marshalNID2ᚕintᚄ(ctx context.Context, sel ast.Se
 	return ret
 }
 
+func (ec *executionContext) unmarshalNJoinListInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐJoinListInput(ctx context.Context, v interface{}) (model.JoinListInput, error) {
+	res, err := ec.unmarshalInputJoinListInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNList2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐList(ctx context.Context, sel ast.SelectionSet, v db.List) graphql.Marshaler {
 	return ec._List(ctx, sel, &v)
 }
@@ -2776,6 +2943,50 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*db.User) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUser(ctx context.Context, sel ast.SelectionSet, v *db.User) graphql.Marshaler {

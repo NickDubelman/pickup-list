@@ -16,6 +16,7 @@ type List implements Node {
   name: String!
   created_at: Time!
 
+  users: [User!]!
   owner: User!
 }
 
@@ -27,10 +28,15 @@ type Query {
 
 type Mutation {
   createList(input: CreateListInput!): List!
+  joinList(input: JoinListInput!): List!
 }
 
 input CreateListInput {
   name: String!
+}
+
+input JoinListInput {
+  listID: ID!
 }
 
 scalar Time

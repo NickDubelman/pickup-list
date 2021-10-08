@@ -3,6 +3,7 @@ package schema
 import (
 	"time"
 
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -24,7 +25,12 @@ func (List) Fields() []ent.Field {
 // Edges of the List.
 func (List) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("owner", User.Type).Unique().Required(),
-		edge.To("users", User.Type),
+		edge.To("owner", User.Type).
+			Unique().
+			Required().
+			Annotations(entgql.Bind()),
+
+		edge.To("users", User.Type).
+			Annotations(entgql.Bind()),
 	}
 }

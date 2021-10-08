@@ -5,3 +5,7 @@ package model
 type CreateListInput struct {
 	Name string `json:"name"`
 }
+
+type JoinListInput struct {
+	ListID int `json:"listID"`
+}

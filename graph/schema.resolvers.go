@@ -20,6 +20,12 @@ func (r *mutationResolver) CreateList(ctx context.Context, input model.CreateLis
 		Save(ctx)
 }
 
+func (r *mutationResolver) JoinList(ctx context.Context, input model.JoinListInput) (*db.List, error) {
+	userID := 4294967296
+
+	return r.client.List.UpdateOneID(input.ListID).AddUserIDs(userID).Save(ctx)
+}
+
 func (r *queryResolver) Lists(ctx context.Context) ([]*db.List, error) {
 	return r.client.List.Query().All(ctx)
 }

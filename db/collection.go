@@ -17,6 +17,18 @@ func (l *ListQuery) CollectFields(ctx context.Context, satisfies ...string) *Lis
 }
 
 func (l *ListQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ListQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "owner":
+			l = l.WithOwner(func(query *UserQuery) {
+				query.collectField(ctx, field)
+			})
+		case "users":
+			l = l.WithUsers(func(query *UserQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
 	return l
 }
 
@@ -29,5 +41,17 @@ func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) *Use
 }
 
 func (u *UserQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *UserQuery {
+	for _, field := range graphql.CollectFields(ctx, field.Selections, satisfies) {
+		switch field.Name {
+		case "lists":
+			u = u.WithLists(func(query *ListQuery) {
+				query.collectField(ctx, field)
+			})
+		case "owned_lists":
+			u = u.WithOwnedLists(func(query *ListQuery) {
+				query.collectField(ctx, field)
+			})
+		}
+	}
 	return u
 }
