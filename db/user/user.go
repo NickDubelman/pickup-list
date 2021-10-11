@@ -15,6 +15,8 @@ const (
 	FieldRealName = "real_name"
 	// FieldNbaName holds the string denoting the nba_name field in the database.
 	FieldNbaName = "nba_name"
+	// FieldEmail holds the string denoting the email field in the database.
+	FieldEmail = "email"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeOwnedLists holds the string denoting the owned_lists edge name in mutations.
@@ -42,6 +44,7 @@ var Columns = []string{
 	FieldID,
 	FieldRealName,
 	FieldNbaName,
+	FieldEmail,
 	FieldCreatedAt,
 }
 

@@ -6,6 +6,7 @@ type User implements Node {
   id: ID!
   real_name: String!
   nba_name: String!
+  email: String!
   created_at: Time!
 
   lists: [List!]!

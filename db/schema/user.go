@@ -19,6 +19,7 @@ func (User) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("real_name"),
 		field.String("nba_name").Unique(),
+		field.String("email").Unique(),
 		field.Time("created_at").Default(time.Now),
 	}
 }
