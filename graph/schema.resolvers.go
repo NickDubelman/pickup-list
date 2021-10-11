@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/NickDubelman/pickup-list/db"
+	"github.com/NickDubelman/pickup-list/db/user"
 	"github.com/NickDubelman/pickup-list/graph/generated"
 	"github.com/NickDubelman/pickup-list/graph/model"
 )
@@ -21,9 +22,15 @@ func (r *mutationResolver) CreateList(ctx context.Context, input model.CreateLis
 }
 
 func (r *mutationResolver) JoinList(ctx context.Context, input model.JoinListInput) (*db.List, error) {
-	userID := 4294967296
+	user, err := r.client.User.Query().
+		Where(user.Email("ndubelman@gmail.com")).
+		Only(ctx)
 
-	return r.client.List.UpdateOneID(input.ListID).AddUserIDs(userID).Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.client.List.UpdateOneID(input.ListID).AddUsers(user).Save(ctx)
 }
 
 func (r *queryResolver) Lists(ctx context.Context) ([]*db.List, error) {

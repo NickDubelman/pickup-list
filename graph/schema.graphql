@@ -23,6 +23,7 @@ type List implements Node {
 
 type Query {
   lists: [List!]!
+
   node(id: ID!): Node
   nodes(ids: [ID!]!): [Node]!
 }
