@@ -11,6 +11,7 @@ require (
 	github.com/graphql-go/graphql v0.8.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/rs/cors v1.6.0
 	github.com/vektah/gqlparser/v2 v2.2.0
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.9
 	golang.org/x/mod v0.5.1 // indirect

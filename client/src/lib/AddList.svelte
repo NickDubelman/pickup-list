@@ -1,16 +1,31 @@
 <script>
   import { lists } from '$lib/stores/lists'
+  import { graphqlQuery } from '$lib/graphql'
 
   let adding = false
   let listName = ''
 
-  function handleSubmit() {
-    let id = 1
-    if ($lists.length > 0) {
-      id = Math.max(...$lists.map(list => list.id)) + 1
+  const createListMutation = `
+    mutation CreateList($input: CreateListInput!){
+      createList(input: $input){
+        id
+        name
+      }
     }
-    lists.addList(id, listName)
-    onCancelAdd()
+  `
+
+  async function handleSubmit() {
+    try {
+      const { createList } = await graphqlQuery(fetch, {
+        query: createListMutation,
+        variables: { input: { name: listName } }
+      })
+      const { id, name } = createList
+      lists.addList(id, name)
+      onCancelAdd()
+    } catch (e) {
+      alert(e)
+    }
   }
 
   function onCancelAdd() {

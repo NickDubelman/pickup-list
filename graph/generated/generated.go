@@ -57,12 +57,15 @@ type ComplexityRoot struct {
 	Mutation struct {
 		CreateList func(childComplexity int, input model.CreateListInput) int
 		JoinList   func(childComplexity int, input model.JoinListInput) int
+		SetUser    func(childComplexity int, input model.SetUserInput) int
+		UnjoinList func(childComplexity int, input model.JoinListInput) int
 	}
 
 	Query struct {
 		Lists func(childComplexity int) int
 		Node  func(childComplexity int, id int) int
 		Nodes func(childComplexity int, ids []int) int
+		User  func(childComplexity int) int
 	}
 
 	User struct {
@@ -78,8 +81,11 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateList(ctx context.Context, input model.CreateListInput) (*db.List, error)
 	JoinList(ctx context.Context, input model.JoinListInput) (*db.List, error)
+	UnjoinList(ctx context.Context, input model.JoinListInput) (*db.List, error)
+	SetUser(ctx context.Context, input model.SetUserInput) (*db.User, error)
 }
 type QueryResolver interface {
+	User(ctx context.Context) (*db.User, error)
 	Lists(ctx context.Context) ([]*db.List, error)
 	Node(ctx context.Context, id int) (db.Noder, error)
 	Nodes(ctx context.Context, ids []int) ([]db.Noder, error)
@@ -100,7 +106,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "List.created_at":
+	case "List.createdAt":
 		if e.complexity.List.CreatedAt == nil {
 			break
 		}
@@ -159,6 +165,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.JoinList(childComplexity, args["input"].(model.JoinListInput)), true
 
+	case "Mutation.setUser":
+		if e.complexity.Mutation.SetUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetUser(childComplexity, args["input"].(model.SetUserInput)), true
+
+	case "Mutation.unjoinList":
+		if e.complexity.Mutation.UnjoinList == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unjoinList_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnjoinList(childComplexity, args["input"].(model.JoinListInput)), true
+
 	case "Query.lists":
 		if e.complexity.Query.Lists == nil {
 			break
@@ -190,7 +220,14 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Nodes(childComplexity, args["ids"].([]int)), true
 
-	case "User.created_at":
+	case "Query.user":
+		if e.complexity.Query.User == nil {
+			break
+		}
+
+		return e.complexity.Query.User(childComplexity), true
+
+	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
 			break
 		}
@@ -218,14 +255,14 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Lists(childComplexity), true
 
-	case "User.nba_name":
+	case "User.nbaName":
 		if e.complexity.User.NbaName == nil {
 			break
 		}
 
 		return e.complexity.User.NbaName(childComplexity), true
 
-	case "User.real_name":
+	case "User.realName":
 		if e.complexity.User.RealName == nil {
 			break
 		}
@@ -296,31 +333,10 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "graph/schema.graphql", Input: `interface Node {
-  id: ID!
-}
-
-type User implements Node {
-  id: ID!
-  real_name: String!
-  nba_name: String!
-  email: String!
-  created_at: Time!
-
+	{Name: "graph/schema.graphql", Input: `type Query {
+  user: User
   lists: [List!]!
-}
 
-type List implements Node {
-  id: ID!
-  name: String!
-  created_at: Time!
-
-  users: [User!]!
-  owner: User!
-}
-
-type Query {
-  lists: [List!]!
   node(id: ID!): Node
   nodes(ids: [ID!]!): [Node]!
 }
@@ -328,6 +344,28 @@ type Query {
 type Mutation {
   createList(input: CreateListInput!): List!
   joinList(input: JoinListInput!): List!
+  unjoinList(input: JoinListInput!): List!
+
+  setUser(input: SetUserInput!): User!
+}
+
+type User implements Node {
+  id: ID!
+  realName: String!
+  nbaName: String!
+  email: String!
+  createdAt: Time!
+
+  lists: [List!]!
+}
+
+type List implements Node {
+  id: ID!
+  name: String!
+  createdAt: Time!
+
+  users: [User!]!
+  owner: User!
 }
 
 input CreateListInput {
@@ -336,6 +374,15 @@ input CreateListInput {
 
 input JoinListInput {
   listID: ID!
+}
+
+input SetUserInput {
+  realName: String!
+  nbaName: String!
+}
+
+interface Node {
+  id: ID!
 }
 
 scalar Time
@@ -363,6 +410,36 @@ func (ec *executionContext) field_Mutation_createList_args(ctx context.Context, 
 }
 
 func (ec *executionContext) field_Mutation_joinList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.JoinListInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNJoinListInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐJoinListInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.SetUserInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNSetUserInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐSetUserInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_unjoinList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.JoinListInput
@@ -530,7 +607,7 @@ func (ec *executionContext) _List_name(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _List_created_at(ctx context.Context, field graphql.CollectedField, obj *db.List) (ret graphql.Marshaler) {
+func (ec *executionContext) _List_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.List) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -717,6 +794,122 @@ func (ec *executionContext) _Mutation_joinList(ctx context.Context, field graphq
 	res := resTmp.(*db.List)
 	fc.Result = res
 	return ec.marshalNList2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐList(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_unjoinList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_unjoinList_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UnjoinList(rctx, args["input"].(model.JoinListInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.List)
+	fc.Result = res
+	return ec.marshalNList2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐList(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_setUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_setUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SetUser(rctx, args["input"].(model.SetUserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().User(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_lists(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -941,7 +1134,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_real_name(ctx context.Context, field graphql.CollectedField, obj *db.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_realName(ctx context.Context, field graphql.CollectedField, obj *db.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -976,7 +1169,7 @@ func (ec *executionContext) _User_real_name(ctx context.Context, field graphql.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_nba_name(ctx context.Context, field graphql.CollectedField, obj *db.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_nbaName(ctx context.Context, field graphql.CollectedField, obj *db.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1046,7 +1239,7 @@ func (ec *executionContext) _User_email(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.CollectedField, obj *db.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2284,6 +2477,37 @@ func (ec *executionContext) unmarshalInputJoinListInput(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSetUserInput(ctx context.Context, obj interface{}) (model.SetUserInput, error) {
+	var it model.SetUserInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "realName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("realName"))
+			it.RealName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nbaName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nbaName"))
+			it.NbaName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2332,8 +2556,8 @@ func (ec *executionContext) _List(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "created_at":
-			out.Values[i] = ec._List_created_at(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._List_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -2401,6 +2625,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "unjoinList":
+			out.Values[i] = ec._Mutation_unjoinList(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "setUser":
+			out.Values[i] = ec._Mutation_setUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2427,6 +2661,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_user(ctx, field)
+				return res
+			})
 		case "lists":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -2497,13 +2742,13 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "real_name":
-			out.Values[i] = ec._User_real_name(ctx, field, obj)
+		case "realName":
+			out.Values[i] = ec._User_realName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "nba_name":
-			out.Values[i] = ec._User_nba_name(ctx, field, obj)
+		case "nbaName":
+			out.Values[i] = ec._User_nbaName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -2512,8 +2757,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "created_at":
-			out.Values[i] = ec._User_created_at(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._User_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -2964,6 +3209,11 @@ func (ec *executionContext) marshalNNode2ᚕgithubᚗcomᚋNickDubelmanᚋpickup
 	return ret
 }
 
+func (ec *executionContext) unmarshalNSetUserInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐSetUserInput(ctx context.Context, v interface{}) (model.SetUserInput, error) {
+	res, err := ec.unmarshalInputSetUserInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2992,6 +3242,10 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNUser2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUser(ctx context.Context, sel ast.SelectionSet, v db.User) graphql.Marshaler {
+	return ec._User(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*db.User) graphql.Marshaler {
@@ -3358,6 +3612,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUser(ctx context.Context, sel ast.SelectionSet, v *db.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

@@ -1,5 +1,29 @@
+<script context="module">
+  import { graphqlQuery } from '$lib/graphql'
+
+  export async function load({ fetch }) {
+    const userQuery = `{
+      user {
+        realName
+        nbaName
+      }
+    }`
+
+    try {
+      const { user } = await graphqlQuery(fetch, { query: userQuery })
+      return { props: { user } }
+    } catch (error) {
+      return { error, status: 500 }
+    }
+  }
+</script>
+
 <script>
   import Nav from '$lib/Nav.svelte'
+  import { profile } from '$lib/stores/profile'
+
+  export let user = { realName: '', nbaName: '' }
+  profile.set(user)
 </script>
 
 <svelte:head>

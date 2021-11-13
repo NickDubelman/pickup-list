@@ -13,17 +13,23 @@ import (
 )
 
 func (r *mutationResolver) CreateList(ctx context.Context, input model.CreateListInput) (*db.List, error) {
-	ownerID := 4294967296
+	owner, err := r.client.User.Query().
+		Where(user.Email(testUser)).
+		Only(ctx)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return r.client.List.Create().
 		SetName(input.Name).
-		SetOwnerID(ownerID).
+		SetOwner(owner).
 		Save(ctx)
 }
 
 func (r *mutationResolver) JoinList(ctx context.Context, input model.JoinListInput) (*db.List, error) {
 	user, err := r.client.User.Query().
-		Where(user.Email("ndubelman@gmail.com")).
+		Where(user.Email(testUser)).
 		Only(ctx)
 
 	if err != nil {
@@ -31,6 +37,39 @@ func (r *mutationResolver) JoinList(ctx context.Context, input model.JoinListInp
 	}
 
 	return r.client.List.UpdateOneID(input.ListID).AddUsers(user).Save(ctx)
+}
+
+func (r *mutationResolver) UnjoinList(ctx context.Context, input model.JoinListInput) (*db.List, error) {
+	user, err := r.client.User.Query().
+		Where(user.Email(testUser)).
+		Only(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.client.List.UpdateOneID(input.ListID).RemoveUsers(user).Save(ctx)
+}
+
+func (r *mutationResolver) SetUser(ctx context.Context, input model.SetUserInput) (*db.User, error) {
+	user, err := r.client.User.Query().
+		Where(user.Email(testUser)).
+		Only(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user.Update().
+		SetRealName(input.RealName).
+		SetNbaName(input.NbaName).
+		Save(ctx)
+}
+
+func (r *queryResolver) User(ctx context.Context) (*db.User, error) {
+	return r.client.User.Query().
+		Where(user.Email(testUser)).
+		Only(ctx)
 }
 
 func (r *queryResolver) Lists(ctx context.Context) ([]*db.List, error) {

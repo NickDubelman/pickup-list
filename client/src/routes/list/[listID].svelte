@@ -1,32 +1,106 @@
-<script>
-  import { page } from '$app/stores'
+<script context="module">
+  import { graphqlQuery } from '$lib/graphql'
 
-  import { lists } from '$lib/stores/lists'
-  import { profile } from '$lib/stores/profile'
+  const listQuery = `
+    query ListQuery($id: ID!) {
+      node(id: $id) {
+        ... on List {
+          name
+          users {
+            realName
+            nbaName
+          }
+        }
+      }
+    }
+  `
 
-  $: listID = +$page.params.listID
-  $: list = $lists.find(l => l.id === listID)
+  export async function load({ page, fetch }) {
+    try {
+      const data = await graphqlQuery(fetch, {
+        query: listQuery,
+        variables: { id: page.params.listID }
+      })
 
-  const onJoinList = () => {
-    lists.joinList(listID, $profile)
+      return { props: { list: data.node } }
+    } catch (error) {
+      return { error, status: 500 }
+    }
   }
-
-  $: alreadyJoined = list.people.find(
-    person =>
-      person.realName === $profile.realName && person.nbaName === $profile.nbaName
-  )
 </script>
 
-<h1>Specific List!</h1>
-<h2>12:00PM</h2>
+<script>
+  import { page } from '$app/stores'
+  import { profile } from '$lib/stores/profile'
+
+  export let list
+
+  $: alreadyJoined = list.users.find(
+    user => user.realName === $profile.realName && user.nbaName === $profile.nbaName
+  )
+
+  const joinListMutation = `
+    mutation JoinList($input: JoinListInput!){
+      joinList(input: $input){
+        users {
+          realName
+          nbaName
+        }
+      }
+    }
+  `
+
+  const unjoinListMutation = `
+    mutation UnjoinList($input: JoinListInput!){
+      unjoinList(input: $input){
+        users {
+          realName
+          nbaName
+        }
+      }
+    }
+  `
+
+  const onJoin = async () => {
+    try {
+      const { joinList } = await graphqlQuery(fetch, {
+        query: joinListMutation,
+        variables: { input: { listID: $page.params.listID } }
+      })
+
+      list.users = joinList.users
+    } catch (e) {
+      alert(e)
+    }
+  }
+
+  const onUnjoin = async () => {
+    try {
+      const { unjoinList } = await graphqlQuery(fetch, {
+        query: unjoinListMutation,
+        variables: { input: { listID: $page.params.listID } }
+      })
+
+      list.users = unjoinList.users
+    } catch (e) {
+      alert(e)
+    }
+  }
+</script>
+
+<h1>{list.name}</h1>
 
 {#if $profile && !alreadyJoined}
-  <button on:click={onJoinList}>Join this run</button>
+  <button on:click={onJoin}>Join this list</button>
+{:else if $profile && alreadyJoined}
+  <button on:click={onUnjoin}>Remove yourself from this list</button>
+{:else}
+  To join lists, you must first set your <a href="/profile">profile</a>
 {/if}
 
-{#if list.people.length > 0}
+{#if list.users.length > 0}
   <ol>
-    {#each list.people as { realName, nbaName }}
+    {#each list.users as { realName, nbaName }}
       <li>{realName} ({nbaName})</li>
     {/each}
   </ol>
@@ -34,17 +108,12 @@
   <div>No one has joined this list</div>
 {/if}
 
-{#if !$profile}
-  To join the list, you must set your <a href="/profile">profile</a>
-{/if}
-
 <style>
   h1 {
     margin-bottom: 8px;
   }
 
-  h2 {
-    margin-top: 8px;
+  button {
     margin-bottom: 8px;
   }
 </style>

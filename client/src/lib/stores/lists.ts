@@ -8,10 +8,11 @@ interface List {
 }
 
 function createLists() {
-  const { subscribe, update } = writable<List[]>([])
+  const { subscribe, update, set } = writable<List[]>([])
 
   return {
     subscribe,
+    set,
     addList: (id: number, name: string) => {
       update(prev => [...prev, { id, name: name.trim(), people: [] }])
     },

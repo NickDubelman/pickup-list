@@ -10,6 +10,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/rs/cors"
 
 	"github.com/NickDubelman/pickup-list/db"
 	"github.com/NickDubelman/pickup-list/db/migrate"
@@ -52,7 +53,7 @@ func main() {
 	graphQLServer := handler.NewDefaultServer(graph.NewSchema(client))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", graphQLServer)
+	http.Handle("/query", cors.Default().Handler(graphQLServer))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

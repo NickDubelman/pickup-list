@@ -1,17 +1,36 @@
 <script>
   import { goto } from '$app/navigation'
-
+  import { graphqlQuery } from '$lib/graphql'
   import { profile } from '$lib/stores/profile'
 
   const players = ['Lebron James', 'Anthony Davis', 'Robert Sacre']
 
-  let realName = $profile ? $profile.realName : ''
-  let nbaName = $profile ? $profile.nbaName : ''
-  $: canSubmit = realName !== '' && nbaName !== ''
+  let { realName, nbaName } = $profile
 
-  function handleSubmit() {
-    profile.set({ realName, nbaName })
-    goto('/lists')
+  const canSubmit = realName !== '' && nbaName !== ''
+
+  const setUserMutation = `
+    mutation SetUser($input: SetUserInput!){
+      setUser(input: $input){
+        realName
+        nbaName
+      }
+    }
+  `
+
+  async function handleSubmit() {
+    // Request to set user
+    try {
+      await graphqlQuery(fetch, {
+        query: setUserMutation,
+        variables: { input: { realName, nbaName } }
+      })
+      profile.set({ ...$profile, realName, nbaName })
+      alert('Updated profile!')
+      goto('/lists')
+    } catch (e) {
+      alert(e)
+    }
   }
 </script>
 

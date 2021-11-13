@@ -9,3 +9,8 @@ type CreateListInput struct {
 type JoinListInput struct {
 	ListID int `json:"listID"`
 }
+
+type SetUserInput struct {
+	RealName string `json:"realName"`
+	NbaName  string `json:"nbaName"`
+}

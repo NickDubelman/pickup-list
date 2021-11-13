@@ -1,27 +1,5 @@
-interface Node {
-  id: ID!
-}
-
-type User implements Node {
-  id: ID!
-  real_name: String!
-  nba_name: String!
-  email: String!
-  created_at: Time!
-
-  lists: [List!]!
-}
-
-type List implements Node {
-  id: ID!
-  name: String!
-  created_at: Time!
-
-  users: [User!]!
-  owner: User!
-}
-
 type Query {
+  user: User
   lists: [List!]!
 
   node(id: ID!): Node
@@ -31,6 +9,28 @@ type Query {
 type Mutation {
   createList(input: CreateListInput!): List!
   joinList(input: JoinListInput!): List!
+  unjoinList(input: JoinListInput!): List!
+
+  setUser(input: SetUserInput!): User!
+}
+
+type User implements Node {
+  id: ID!
+  realName: String!
+  nbaName: String!
+  email: String!
+  createdAt: Time!
+
+  lists: [List!]!
+}
+
+type List implements Node {
+  id: ID!
+  name: String!
+  createdAt: Time!
+
+  users: [User!]!
+  owner: User!
 }
 
 input CreateListInput {
@@ -39,6 +39,15 @@ input CreateListInput {
 
 input JoinListInput {
   listID: ID!
+}
+
+input SetUserInput {
+  realName: String!
+  nbaName: String!
+}
+
+interface Node {
+  id: ID!
 }
 
 scalar Time
