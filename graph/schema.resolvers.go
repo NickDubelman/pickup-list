@@ -61,18 +61,21 @@ func (r *mutationResolver) SetUser(ctx context.Context, input model.SetUserInput
 		return nil, err
 	}
 
-	nbaPlayer, err := r.client.NBAPlayer.Query().
-		Where(nbaplayer.Name((input.NbaName))).
-		Only(ctx)
+	update := user.Update().SetRealName(input.RealName).ClearNbaPlayer()
 
-	if err != nil {
-		return nil, err
+	if input.NbaName != "" {
+		nbaPlayer, err := r.client.NBAPlayer.Query().
+			Where(nbaplayer.Name((input.NbaName))).
+			Only(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		update = update.SetNbaPlayer(nbaPlayer)
 	}
 
-	return user.Update().
-		SetRealName(input.RealName).
-		ClearNbaPlayer().SetNbaPlayer(nbaPlayer).
-		Save(ctx)
+	return update.Save(ctx)
 }
 
 func (r *queryResolver) User(ctx context.Context) (*db.User, error) {

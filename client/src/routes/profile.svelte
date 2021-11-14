@@ -21,7 +21,7 @@
 
   let { realName, nbaName } = $profile
 
-  const canSubmit = realName !== '' && nbaName !== ''
+  const canSubmit = realName !== ''
 
   const setUserMutation = `
     mutation SetUser($input: SetUserInput!){
@@ -51,21 +51,29 @@
 <h1>Create your profile</h1>
 
 <form on:submit|preventDefault={handleSubmit}>
-  <label for="real-name">Real name:</label>
-  <input
-    type="text"
-    name="real-name"
-    placeholder="First name only is fine if you prefer"
-    bind:value={realName}
-  />
+  <div>
+    <label for="real-name">Real name:</label>
+    <input
+      type="text"
+      name="real-name"
+      placeholder="First name only is fine if you prefer"
+      bind:value={realName}
+    />
+  </div>
 
-  <label for="nba-name">NBA name:</label>
-  <select name="nba-name" required bind:value={nbaName}>
-    <option value="" disabled selected hidden>Select a player</option>
-    {#each nbaPlayers as player}
-      <option value={player.name}>{player.name}</option>
-    {/each}
-  </select>
+  <div>
+    <label for="nba-name">NBA name:</label>
+    <select name="nba-name" bind:value={nbaName}>
+      <option value="" disabled selected hidden>Select a player</option>
+      {#each nbaPlayers as player}
+        <option value={player.name}>{player.name}</option>
+      {/each}
+    </select>
+
+    {#if nbaName && nbaName !== ''}
+      <button title="Unset" on:click|preventDefault={() => (nbaName = '')}>X</button>
+    {/if}
+  </div>
 
   <button type="submit" disabled={!canSubmit}>Done</button>
 </form>
@@ -77,7 +85,7 @@
 
   input[type='text'],
   select {
-    width: 100%;
+    width: 90%;
     padding: 6px 10px;
     margin: 8px 0;
     display: inline-block;
