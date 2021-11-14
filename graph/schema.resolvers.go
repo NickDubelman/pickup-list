@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/NickDubelman/pickup-list/db"
 	"github.com/NickDubelman/pickup-list/db/nbaplayer"
@@ -66,10 +67,19 @@ func (r *mutationResolver) SetUser(ctx context.Context, input model.SetUserInput
 	if input.NbaName != "" {
 		nbaPlayer, err := r.client.NBAPlayer.Query().
 			Where(nbaplayer.Name((input.NbaName))).
+			WithUser().
 			Only(ctx)
 
 		if err != nil {
 			return nil, err
+		}
+
+		if nbaPlayer.Edges.User != nil {
+			suffix := "Choose a player who is not already represented"
+			user := nbaPlayer.Edges.User.RealName
+			return nil, fmt.Errorf(
+				"%s is already represented by %s. %s", input.NbaName, user, suffix,
+			)
 		}
 
 		update = update.SetNbaPlayer(nbaPlayer)
