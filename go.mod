@@ -7,6 +7,8 @@ require (
 	entgo.io/ent v0.9.1
 	github.com/99designs/gqlgen v0.14.0
 	github.com/agnivade/levenshtein v1.1.1 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gin-gonic/gin v1.7.4
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/graphql-go/graphql v0.8.0 // indirect
@@ -16,6 +18,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.2.0
 	github.com/vmihailenco/msgpack/v5 v5.0.0-beta.9
 	golang.org/x/mod v0.5.1 // indirect
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac // indirect
 	golang.org/x/tools v0.1.7 // indirect
