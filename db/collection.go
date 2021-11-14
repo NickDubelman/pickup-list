@@ -67,6 +67,10 @@ func (u *UserQuery) collectField(ctx *graphql.OperationContext, field graphql.Co
 			u = u.WithLists(func(query *ListQuery) {
 				query.collectField(ctx, field)
 			})
+		case "nba_player":
+			u = u.WithNbaPlayer(func(query *NBAPlayerQuery) {
+				query.collectField(ctx, field)
+			})
 		case "owned_lists":
 			u = u.WithOwnedLists(func(query *ListQuery) {
 				query.collectField(ctx, field)

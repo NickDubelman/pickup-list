@@ -35,12 +35,6 @@ func (uu *UserUpdate) SetRealName(s string) *UserUpdate {
 	return uu
 }
 
-// SetNbaName sets the "nba_name" field.
-func (uu *UserUpdate) SetNbaName(s string) *UserUpdate {
-	uu.mutation.SetNbaName(s)
-	return uu
-}
-
 // SetEmail sets the "email" field.
 func (uu *UserUpdate) SetEmail(s string) *UserUpdate {
 	uu.mutation.SetEmail(s)
@@ -242,13 +236,6 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: user.FieldRealName,
 		})
 	}
-	if value, ok := uu.mutation.NbaName(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldNbaName,
-		})
-	}
 	if value, ok := uu.mutation.Email(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
@@ -428,12 +415,6 @@ type UserUpdateOne struct {
 // SetRealName sets the "real_name" field.
 func (uuo *UserUpdateOne) SetRealName(s string) *UserUpdateOne {
 	uuo.mutation.SetRealName(s)
-	return uuo
-}
-
-// SetNbaName sets the "nba_name" field.
-func (uuo *UserUpdateOne) SetNbaName(s string) *UserUpdateOne {
-	uuo.mutation.SetNbaName(s)
 	return uuo
 }
 
@@ -660,13 +641,6 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Type:   field.TypeString,
 			Value:  value,
 			Column: user.FieldRealName,
-		})
-	}
-	if value, ok := uuo.mutation.NbaName(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldNbaName,
 		})
 	}
 	if value, ok := uuo.mutation.Email(); ok {

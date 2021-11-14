@@ -18,7 +18,6 @@ type Mutation {
 type User implements Node {
   id: ID!
   realName: String!
-  nbaName: String!
   email: String!
   createdAt: Time!
 

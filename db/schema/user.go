@@ -18,7 +18,6 @@ type User struct {
 func (User) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("real_name"),
-		field.String("nba_name").Unique(),
 		field.String("email").Unique(),
 		field.Time("created_at").Default(time.Now),
 	}
@@ -27,7 +26,9 @@ func (User) Fields() []ent.Field {
 // Edges of the User.
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("nba_player", NBAPlayer.Type).Unique(),
+		edge.To("nba_player", NBAPlayer.Type).
+			Unique().
+			Annotations(entgql.Bind()),
 
 		edge.From("owned_lists", List.Type).
 			Ref("owner").

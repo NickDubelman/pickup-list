@@ -30,12 +30,6 @@ func (uc *UserCreate) SetRealName(s string) *UserCreate {
 	return uc
 }
 
-// SetNbaName sets the "nba_name" field.
-func (uc *UserCreate) SetNbaName(s string) *UserCreate {
-	uc.mutation.SetNbaName(s)
-	return uc
-}
-
 // SetEmail sets the "email" field.
 func (uc *UserCreate) SetEmail(s string) *UserCreate {
 	uc.mutation.SetEmail(s)
@@ -187,9 +181,6 @@ func (uc *UserCreate) check() error {
 	if _, ok := uc.mutation.RealName(); !ok {
 		return &ValidationError{Name: "real_name", err: errors.New(`db: missing required field "real_name"`)}
 	}
-	if _, ok := uc.mutation.NbaName(); !ok {
-		return &ValidationError{Name: "nba_name", err: errors.New(`db: missing required field "nba_name"`)}
-	}
 	if _, ok := uc.mutation.Email(); !ok {
 		return &ValidationError{Name: "email", err: errors.New(`db: missing required field "email"`)}
 	}
@@ -231,14 +222,6 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Column: user.FieldRealName,
 		})
 		_node.RealName = value
-	}
-	if value, ok := uc.mutation.NbaName(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldNbaName,
-		})
-		_node.NbaName = value
 	}
 	if value, ok := uc.mutation.Email(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -379,18 +362,6 @@ func (u *UserUpsert) UpdateRealName() *UserUpsert {
 	return u
 }
 
-// SetNbaName sets the "nba_name" field.
-func (u *UserUpsert) SetNbaName(v string) *UserUpsert {
-	u.Set(user.FieldNbaName, v)
-	return u
-}
-
-// UpdateNbaName sets the "nba_name" field to the value that was provided on create.
-func (u *UserUpsert) UpdateNbaName() *UserUpsert {
-	u.SetExcluded(user.FieldNbaName)
-	return u
-}
-
 // SetEmail sets the "email" field.
 func (u *UserUpsert) SetEmail(v string) *UserUpsert {
 	u.Set(user.FieldEmail, v)
@@ -468,20 +439,6 @@ func (u *UserUpsertOne) SetRealName(v string) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateRealName() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateRealName()
-	})
-}
-
-// SetNbaName sets the "nba_name" field.
-func (u *UserUpsertOne) SetNbaName(v string) *UserUpsertOne {
-	return u.Update(func(s *UserUpsert) {
-		s.SetNbaName(v)
-	})
-}
-
-// UpdateNbaName sets the "nba_name" field to the value that was provided on create.
-func (u *UserUpsertOne) UpdateNbaName() *UserUpsertOne {
-	return u.Update(func(s *UserUpsert) {
-		s.UpdateNbaName()
 	})
 }
 
@@ -728,20 +685,6 @@ func (u *UserUpsertBulk) SetRealName(v string) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateRealName() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateRealName()
-	})
-}
-
-// SetNbaName sets the "nba_name" field.
-func (u *UserUpsertBulk) SetNbaName(v string) *UserUpsertBulk {
-	return u.Update(func(s *UserUpsert) {
-		s.SetNbaName(v)
-	})
-}
-
-// UpdateNbaName sets the "nba_name" field to the value that was provided on create.
-func (u *UserUpsertBulk) UpdateNbaName() *UserUpsertBulk {
-	return u.Update(func(s *UserUpsert) {
-		s.UpdateNbaName()
 	})
 }
 

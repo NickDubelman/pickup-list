@@ -7,7 +7,7 @@
         users {
           id
           realName
-          nbaName
+          nbaPlayer { name }
         }
       }
     }`

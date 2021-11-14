@@ -100,13 +100,6 @@ func RealName(v string) predicate.User {
 	})
 }
 
-// NbaName applies equality check predicate on the "nba_name" field. It's identical to NbaNameEQ.
-func NbaName(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldNbaName), v))
-	})
-}
-
 // Email applies equality check predicate on the "email" field. It's identical to EmailEQ.
 func Email(v string) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -229,117 +222,6 @@ func RealNameEqualFold(v string) predicate.User {
 func RealNameContainsFold(v string) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldRealName), v))
-	})
-}
-
-// NbaNameEQ applies the EQ predicate on the "nba_name" field.
-func NbaNameEQ(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameNEQ applies the NEQ predicate on the "nba_name" field.
-func NbaNameNEQ(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameIn applies the In predicate on the "nba_name" field.
-func NbaNameIn(vs ...string) predicate.User {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.User(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.In(s.C(FieldNbaName), v...))
-	})
-}
-
-// NbaNameNotIn applies the NotIn predicate on the "nba_name" field.
-func NbaNameNotIn(vs ...string) predicate.User {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.User(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.NotIn(s.C(FieldNbaName), v...))
-	})
-}
-
-// NbaNameGT applies the GT predicate on the "nba_name" field.
-func NbaNameGT(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameGTE applies the GTE predicate on the "nba_name" field.
-func NbaNameGTE(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameLT applies the LT predicate on the "nba_name" field.
-func NbaNameLT(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameLTE applies the LTE predicate on the "nba_name" field.
-func NbaNameLTE(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameContains applies the Contains predicate on the "nba_name" field.
-func NbaNameContains(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameHasPrefix applies the HasPrefix predicate on the "nba_name" field.
-func NbaNameHasPrefix(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameHasSuffix applies the HasSuffix predicate on the "nba_name" field.
-func NbaNameHasSuffix(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameEqualFold applies the EqualFold predicate on the "nba_name" field.
-func NbaNameEqualFold(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldNbaName), v))
-	})
-}
-
-// NbaNameContainsFold applies the ContainsFold predicate on the "nba_name" field.
-func NbaNameContainsFold(v string) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldNbaName), v))
 	})
 }
 

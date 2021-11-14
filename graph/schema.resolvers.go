@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/NickDubelman/pickup-list/db"
+	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/user"
 	"github.com/NickDubelman/pickup-list/graph/generated"
 	"github.com/NickDubelman/pickup-list/graph/model"
@@ -60,9 +61,17 @@ func (r *mutationResolver) SetUser(ctx context.Context, input model.SetUserInput
 		return nil, err
 	}
 
+	nbaPlayer, err := r.client.NBAPlayer.Query().
+		Where(nbaplayer.Name((input.NbaName))).
+		Only(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return user.Update().
 		SetRealName(input.RealName).
-		SetNbaName(input.NbaName).
+		ClearNbaPlayer().SetNbaPlayer(nbaPlayer).
 		Save(ctx)
 }
 

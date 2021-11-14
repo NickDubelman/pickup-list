@@ -41,7 +41,6 @@ func main() {
 	// Create a user
 	user, err := client.User.Create().
 		SetRealName("Nick Dubelman").
-		SetNbaName("Alex Caruso").
 		SetEmail("ndubelman@gmail.com").
 		Save(ctx)
 	if err != nil {

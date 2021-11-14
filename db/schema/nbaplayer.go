@@ -22,10 +22,9 @@ func (NBAPlayer) Fields() []ent.Field {
 // Edges of the NBAPlayer.
 func (NBAPlayer) Edges() []ent.Edge {
 	return []ent.Edge{
-		// an NBA player can only be referenced by one user
-		edge.From("user", User.Type). 
+		edge.From("user", User.Type).
 			Ref("nba_player").
-			Unique().
+			Unique(). // an NBA player can only be referenced by one user
 			Annotations(entgql.Bind()),
 	}
 }

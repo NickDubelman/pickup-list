@@ -27,7 +27,7 @@
     mutation SetUser($input: SetUserInput!){
       setUser(input: $input){
         realName
-        nbaName
+        nbaPlayer { name }
       }
     }
   `

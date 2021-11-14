@@ -5,13 +5,20 @@
     const userQuery = `{
       user {
         realName
-        nbaName
+        nbaPlayer { name }
       }
     }`
 
     try {
       const { user } = await graphqlQuery(fetch, { query: userQuery })
-      return { props: { user } }
+      return {
+        props: {
+          user: {
+            realName: user.realName,
+            nbaName: user.nbaPlayer.name
+          }
+        }
+      }
     } catch (error) {
       return { error, status: 500 }
     }

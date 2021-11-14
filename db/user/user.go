@@ -13,8 +13,6 @@ const (
 	FieldID = "id"
 	// FieldRealName holds the string denoting the real_name field in the database.
 	FieldRealName = "real_name"
-	// FieldNbaName holds the string denoting the nba_name field in the database.
-	FieldNbaName = "nba_name"
 	// FieldEmail holds the string denoting the email field in the database.
 	FieldEmail = "email"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -52,7 +50,6 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldRealName,
-	FieldNbaName,
 	FieldEmail,
 	FieldCreatedAt,
 }

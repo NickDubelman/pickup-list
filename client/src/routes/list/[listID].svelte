@@ -8,7 +8,7 @@
           name
           users {
             realName
-            nbaName
+            nbaPlayer { name }
           }
         }
       }
@@ -36,7 +36,8 @@
   export let list
 
   $: alreadyJoined = list.users.find(
-    user => user.realName === $profile.realName && user.nbaName === $profile.nbaName
+    user =>
+      user.realName === $profile.realName && user.nbaPlayer.name === $profile.nbaName
   )
 
   const joinListMutation = `
@@ -44,7 +45,7 @@
       joinList(input: $input){
         users {
           realName
-          nbaName
+          nbaPlayer { name }
         }
       }
     }
@@ -55,7 +56,7 @@
       unjoinList(input: $input){
         users {
           realName
-          nbaName
+          nbaPlayer { name }
         }
       }
     }
@@ -100,8 +101,8 @@
 
 {#if list.users.length > 0}
   <ol>
-    {#each list.users as { realName, nbaName }}
-      <li>{realName} ({nbaName})</li>
+    {#each list.users as { realName, nbaPlayer }}
+      <li>{realName} ({nbaPlayer.name})</li>
     {/each}
   </ol>
 {:else}
