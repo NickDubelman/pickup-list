@@ -32,34 +32,36 @@ type GoogleUserInfo struct {
 	Email string `json:"email"`
 }
 
-// GoogleAuthFromConfig returns handlers that can be used for OAuth with Google
-func GoogleAuthFromConfig() http.HandlerFunc {
+func RouteHandlers(dbClient *db.Client, mux *http.ServeMux) {
 	config, err := getGoogleAuthConfig("oauthConfig.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc(PathLogin, func(w http.ResponseWriter, req *http.Request) {
 		if req.Method == "GET" {
-			switch req.URL.Path {
-			case PathLogin:
-				// Redirect the user to Google to authenticate
-				redirectURL := config.AuthCodeURL(
-					extractPath(req.URL.Query().Get("next")),
-					oauth2.SetAuthURLParam("prompt", "login"),
-				)
+			// Redirect the user to Google to authenticate
+			redirectURL := config.AuthCodeURL(
+				extractPath(req.URL.Query().Get("next")),
+				oauth2.SetAuthURLParam("prompt", "login"),
+			)
 
-				http.Redirect(w, req, redirectURL, codeRedirect)
-
-			case PathCallback:
-				// User succesfully authenticated with Google
-				handleOAuth2Callback(config, w, req)
-
-			case PathError:
-				fmt.Fprintf(w, "Error logging in")
-			}
+			http.Redirect(w, req, redirectURL, codeRedirect)
 		}
-	}
+	})
+
+	mux.HandleFunc(PathCallback, func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == "GET" {
+			// User succesfully authenticated with Google
+			handleOAuth2Callback(config, w, req, dbClient)
+		}
+	})
+
+	mux.HandleFunc(PathError, func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == "GET" {
+			fmt.Fprintf(w, "Error logging in")
+		}
+	})
 }
 
 // handleOAuth2Callback will be executed after the user authenticates with Google and
@@ -70,6 +72,7 @@ func handleOAuth2Callback(
 	cfg *oauth2.Config,
 	w http.ResponseWriter,
 	req *http.Request,
+	dbClient *db.Client,
 ) {
 	handleErr := func(err error) {
 		log.Println(err)
@@ -105,12 +108,6 @@ func handleOAuth2Callback(
 		return
 	}
 
-	dbClient := db.FromContext(ctx)
-	if dbClient == nil {
-		handleErr(fmt.Errorf("could not retrieve db client from context"))
-		return
-	}
-
 	user, err := dbClient.User.Query().Where(user.Email(userInfo.Email)).Only(ctx)
 	if err != nil {
 		if _, ok := err.(*db.NotFoundError); ok {
@@ -143,7 +140,7 @@ func handleOAuth2Callback(
 
 	state := req.URL.Query().Get("state")
 
-	nextURL, err := url.Parse("http://localhost:3000/login-callback")
+	nextURL, err := url.Parse("http://localhost:3000/auth/google/callback")
 	if err != nil {
 		handleErr(err)
 		return
