@@ -10,7 +10,6 @@ import (
 
 	"github.com/NickDubelman/pickup-list/db"
 	"github.com/NickDubelman/pickup-list/db/user"
-	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -34,34 +33,30 @@ type GoogleUserInfo struct {
 }
 
 // GoogleAuthFromConfig returns handlers that can be used for OAuth with Google
-func GoogleAuthFromConfig() gin.HandlerFunc {
+func GoogleAuthFromConfig() http.HandlerFunc {
 	config, err := getGoogleAuthConfig("oauthConfig.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return func(c *gin.Context) {
-		if c.Request.Method == "GET" {
-			switch c.Request.URL.Path {
+	return func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == "GET" {
+			switch req.URL.Path {
 			case PathLogin:
 				// Redirect the user to Google to authenticate
-				http.Redirect(
-					c.Writer,
-					c.Request,
-					config.AuthCodeURL(
-						extractPath(c.Request.URL.Query().Get("next")),
-						oauth2.SetAuthURLParam("prompt", "login"),
-					),
-					codeRedirect,
+				redirectURL := config.AuthCodeURL(
+					extractPath(req.URL.Query().Get("next")),
+					oauth2.SetAuthURLParam("prompt", "login"),
 				)
+
+				http.Redirect(w, req, redirectURL, codeRedirect)
 
 			case PathCallback:
 				// User succesfully authenticated with Google
-				handleOAuth2Callback(config, c)
+				handleOAuth2Callback(config, w, req)
 
 			case PathError:
-				c.String(http.StatusInternalServerError, "Error logging in")
-
+				fmt.Fprintf(w, "Error logging in")
 			}
 		}
 	}
@@ -71,15 +66,19 @@ func GoogleAuthFromConfig() gin.HandlerFunc {
 // consents to the scopes our app requires. We will retrieve their name, email, and
 // picture from the Google userinfo endpoint. Lastly, we generate an access token and
 // a refresh token for the user (both are JWTs)
-func handleOAuth2Callback(cfg *oauth2.Config, ginCtx *gin.Context) {
+func handleOAuth2Callback(
+	cfg *oauth2.Config,
+	w http.ResponseWriter,
+	req *http.Request,
+) {
 	handleErr := func(err error) {
 		log.Println(err)
-		ginCtx.Redirect(http.StatusFound, PathError)
+		http.Redirect(w, req, PathError, http.StatusFound)
 	}
 
-	ctx := ginCtx.Request.Context()
+	ctx := req.Context()
 
-	code := ginCtx.Request.URL.Query().Get("code")
+	code := req.URL.Query().Get("code")
 	t, err := cfg.Exchange(ctx, code)
 	if err != nil {
 		handleErr(err)
@@ -142,7 +141,7 @@ func handleOAuth2Callback(cfg *oauth2.Config, ginCtx *gin.Context) {
 		return
 	}
 
-	state := ginCtx.Request.URL.Query().Get("state")
+	state := req.URL.Query().Get("state")
 
 	nextURL, err := url.Parse("http://localhost:3000/login-callback")
 	if err != nil {
@@ -158,7 +157,7 @@ func handleOAuth2Callback(cfg *oauth2.Config, ginCtx *gin.Context) {
 	query.Add("state", state)
 	nextURL.RawQuery = query.Encode()
 
-	http.Redirect(ginCtx.Writer, ginCtx.Request, nextURL.String(), codeRedirect)
+	http.Redirect(w, req, nextURL.String(), codeRedirect)
 }
 
 // getGoogleAuthConfig attempts to read from a given oauthConfigPath and return a
