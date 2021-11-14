@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/predicate"
+	"github.com/NickDubelman/pickup-list/db/user"
 )
 
 // NBAPlayerQuery is the builder for querying NBAPlayer entities.
@@ -24,6 +25,9 @@ type NBAPlayerQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.NBAPlayer
+	// eager-loading edges.
+	withUser *UserQuery
+	withFKs  bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +62,28 @@ func (npq *NBAPlayerQuery) Unique(unique bool) *NBAPlayerQuery {
 func (npq *NBAPlayerQuery) Order(o ...OrderFunc) *NBAPlayerQuery {
 	npq.order = append(npq.order, o...)
 	return npq
+}
+
+// QueryUser chains the current query on the "user" edge.
+func (npq *NBAPlayerQuery) QueryUser() *UserQuery {
+	query := &UserQuery{config: npq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := npq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := npq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(nbaplayer.Table, nbaplayer.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, nbaplayer.UserTable, nbaplayer.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(npq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first NBAPlayer entity from the query.
@@ -241,10 +267,22 @@ func (npq *NBAPlayerQuery) Clone() *NBAPlayerQuery {
 		offset:     npq.offset,
 		order:      append([]OrderFunc{}, npq.order...),
 		predicates: append([]predicate.NBAPlayer{}, npq.predicates...),
+		withUser:   npq.withUser.Clone(),
 		// clone intermediate query.
 		sql:  npq.sql.Clone(),
 		path: npq.path,
 	}
+}
+
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (npq *NBAPlayerQuery) WithUser(opts ...func(*UserQuery)) *NBAPlayerQuery {
+	query := &UserQuery{config: npq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	npq.withUser = query
+	return npq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -310,9 +348,19 @@ func (npq *NBAPlayerQuery) prepareQuery(ctx context.Context) error {
 
 func (npq *NBAPlayerQuery) sqlAll(ctx context.Context) ([]*NBAPlayer, error) {
 	var (
-		nodes = []*NBAPlayer{}
-		_spec = npq.querySpec()
+		nodes       = []*NBAPlayer{}
+		withFKs     = npq.withFKs
+		_spec       = npq.querySpec()
+		loadedTypes = [1]bool{
+			npq.withUser != nil,
+		}
 	)
+	if npq.withUser != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, nbaplayer.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &NBAPlayer{config: npq.config}
 		nodes = append(nodes, node)
@@ -323,6 +371,7 @@ func (npq *NBAPlayerQuery) sqlAll(ctx context.Context) ([]*NBAPlayer, error) {
 			return fmt.Errorf("db: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, npq.driver, _spec); err != nil {
@@ -331,6 +380,36 @@ func (npq *NBAPlayerQuery) sqlAll(ctx context.Context) ([]*NBAPlayer, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := npq.withUser; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*NBAPlayer)
+		for i := range nodes {
+			if nodes[i].user_nba_player == nil {
+				continue
+			}
+			fk := *nodes[i].user_nba_player
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(user.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "user_nba_player" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.User = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 

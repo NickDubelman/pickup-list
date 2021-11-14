@@ -28,7 +28,7 @@ const (
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// NbaPlayerTable is the table that holds the nba_player relation/edge.
-	NbaPlayerTable = "users"
+	NbaPlayerTable = "nba_players"
 	// NbaPlayerInverseTable is the table name for the NBAPlayer entity.
 	// It exists in this package in order to avoid circular dependency with the "nbaplayer" package.
 	NbaPlayerInverseTable = "nba_players"
@@ -57,12 +57,6 @@ var Columns = []string{
 	FieldCreatedAt,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "users"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"user_nba_player",
-}
-
 var (
 	// ListsPrimaryKey and ListsColumn2 are the table columns denoting the
 	// primary key for the lists relation (M2M).
@@ -73,11 +67,6 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}

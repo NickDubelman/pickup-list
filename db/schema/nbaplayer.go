@@ -1,7 +1,9 @@
 package schema
 
 import (
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -19,5 +21,11 @@ func (NBAPlayer) Fields() []ent.Field {
 
 // Edges of the NBAPlayer.
 func (NBAPlayer) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		// an NBA player can only be referenced by one user
+		edge.From("user", User.Type). 
+			Ref("nba_player").
+			Unique().
+			Annotations(entgql.Bind()),
+	}
 }

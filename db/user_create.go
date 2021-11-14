@@ -258,7 +258,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	}
 	if nodes := uc.mutation.NbaPlayerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2O,
 			Inverse: false,
 			Table:   user.NbaPlayerTable,
 			Columns: []string{user.NbaPlayerColumn},
@@ -273,7 +273,6 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.user_nba_player = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := uc.mutation.OwnedListsIDs(); len(nodes) > 0 {

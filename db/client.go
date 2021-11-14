@@ -345,6 +345,22 @@ func (c *NBAPlayerClient) GetX(ctx context.Context, id int) *NBAPlayer {
 	return obj
 }
 
+// QueryUser queries the user edge of a NBAPlayer.
+func (c *NBAPlayerClient) QueryUser(np *NBAPlayer) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := np.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(nbaplayer.Table, nbaplayer.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, nbaplayer.UserTable, nbaplayer.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(np.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *NBAPlayerClient) Hooks() []Hook {
 	return c.hooks.NBAPlayer
@@ -443,7 +459,7 @@ func (c *UserClient) QueryNbaPlayer(u *User) *NBAPlayerQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(nbaplayer.Table, nbaplayer.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, user.NbaPlayerTable, user.NbaPlayerColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.NbaPlayerTable, user.NbaPlayerColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

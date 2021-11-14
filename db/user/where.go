@@ -536,7 +536,7 @@ func HasNbaPlayer() predicate.User {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(NbaPlayerTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, NbaPlayerTable, NbaPlayerColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, NbaPlayerTable, NbaPlayerColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -548,7 +548,7 @@ func HasNbaPlayerWith(preds ...predicate.NBAPlayer) predicate.User {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(NbaPlayerInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, NbaPlayerTable, NbaPlayerColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, NbaPlayerTable, NbaPlayerColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

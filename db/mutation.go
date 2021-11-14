@@ -536,6 +536,8 @@ type NBAPlayerMutation struct {
 	id            *int
 	name          *string
 	clearedFields map[string]struct{}
+	user          *int
+	cleareduser   bool
 	done          bool
 	oldValue      func(context.Context) (*NBAPlayer, error)
 	predicates    []predicate.NBAPlayer
@@ -656,6 +658,45 @@ func (m *NBAPlayerMutation) ResetName() {
 	m.name = nil
 }
 
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *NBAPlayerMutation) SetUserID(id int) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *NBAPlayerMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *NBAPlayerMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *NBAPlayerMutation) UserID() (id int, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *NBAPlayerMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *NBAPlayerMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
 // Where appends a list predicates to the NBAPlayerMutation builder.
 func (m *NBAPlayerMutation) Where(ps ...predicate.NBAPlayer) {
 	m.predicates = append(m.predicates, ps...)
@@ -774,49 +815,77 @@ func (m *NBAPlayerMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *NBAPlayerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, nbaplayer.EdgeUser)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *NBAPlayerMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case nbaplayer.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *NBAPlayerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *NBAPlayerMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *NBAPlayerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, nbaplayer.EdgeUser)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *NBAPlayerMutation) EdgeCleared(name string) bool {
+	switch name {
+	case nbaplayer.EdgeUser:
+		return m.cleareduser
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *NBAPlayerMutation) ClearEdge(name string) error {
+	switch name {
+	case nbaplayer.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
 	return fmt.Errorf("unknown NBAPlayer unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *NBAPlayerMutation) ResetEdge(name string) error {
+	switch name {
+	case nbaplayer.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
 	return fmt.Errorf("unknown NBAPlayer edge %s", name)
 }
 

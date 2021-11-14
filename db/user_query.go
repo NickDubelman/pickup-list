@@ -31,7 +31,6 @@ type UserQuery struct {
 	withNbaPlayer  *NBAPlayerQuery
 	withOwnedLists *ListQuery
 	withLists      *ListQuery
-	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -82,7 +81,7 @@ func (uq *UserQuery) QueryNbaPlayer() *NBAPlayerQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(nbaplayer.Table, nbaplayer.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, user.NbaPlayerTable, user.NbaPlayerColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.NbaPlayerTable, user.NbaPlayerColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -421,7 +420,6 @@ func (uq *UserQuery) prepareQuery(ctx context.Context) error {
 func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 	var (
 		nodes       = []*User{}
-		withFKs     = uq.withFKs
 		_spec       = uq.querySpec()
 		loadedTypes = [3]bool{
 			uq.withNbaPlayer != nil,
@@ -429,12 +427,6 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 			uq.withLists != nil,
 		}
 	)
-	if uq.withNbaPlayer != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, user.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &User{config: uq.config}
 		nodes = append(nodes, node)
@@ -456,31 +448,30 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 	}
 
 	if query := uq.withNbaPlayer; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*User)
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*User)
 		for i := range nodes {
-			if nodes[i].user_nba_player == nil {
-				continue
-			}
-			fk := *nodes[i].user_nba_player
-			if _, ok := nodeids[fk]; !ok {
-				ids = append(ids, fk)
-			}
-			nodeids[fk] = append(nodeids[fk], nodes[i])
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
 		}
-		query.Where(nbaplayer.IDIn(ids...))
+		query.withFKs = true
+		query.Where(predicate.NBAPlayer(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.NbaPlayerColumn, fks...))
+		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
+			fk := n.user_nba_player
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "user_nba_player" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "user_nba_player" returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "user_nba_player" returned %v for node %v`, *fk, n.ID)
 			}
-			for i := range nodes {
-				nodes[i].Edges.NbaPlayer = n
-			}
+			node.Edges.NbaPlayer = n
 		}
 	}
 

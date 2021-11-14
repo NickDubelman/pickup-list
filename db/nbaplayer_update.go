@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/predicate"
+	"github.com/NickDubelman/pickup-list/db/user"
 )
 
 // NBAPlayerUpdate is the builder for updating NBAPlayer entities.
@@ -32,9 +33,34 @@ func (npu *NBAPlayerUpdate) SetName(s string) *NBAPlayerUpdate {
 	return npu
 }
 
+// SetUserID sets the "user" edge to the User entity by ID.
+func (npu *NBAPlayerUpdate) SetUserID(id int) *NBAPlayerUpdate {
+	npu.mutation.SetUserID(id)
+	return npu
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (npu *NBAPlayerUpdate) SetNillableUserID(id *int) *NBAPlayerUpdate {
+	if id != nil {
+		npu = npu.SetUserID(*id)
+	}
+	return npu
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (npu *NBAPlayerUpdate) SetUser(u *User) *NBAPlayerUpdate {
+	return npu.SetUserID(u.ID)
+}
+
 // Mutation returns the NBAPlayerMutation object of the builder.
 func (npu *NBAPlayerUpdate) Mutation() *NBAPlayerMutation {
 	return npu.mutation
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (npu *NBAPlayerUpdate) ClearUser() *NBAPlayerUpdate {
+	npu.mutation.ClearUser()
+	return npu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -116,6 +142,41 @@ func (npu *NBAPlayerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: nbaplayer.FieldName,
 		})
 	}
+	if npu.mutation.UserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   nbaplayer.UserTable,
+			Columns: []string{nbaplayer.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := npu.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   nbaplayer.UserTable,
+			Columns: []string{nbaplayer.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, npu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{nbaplayer.Label}
@@ -141,9 +202,34 @@ func (npuo *NBAPlayerUpdateOne) SetName(s string) *NBAPlayerUpdateOne {
 	return npuo
 }
 
+// SetUserID sets the "user" edge to the User entity by ID.
+func (npuo *NBAPlayerUpdateOne) SetUserID(id int) *NBAPlayerUpdateOne {
+	npuo.mutation.SetUserID(id)
+	return npuo
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (npuo *NBAPlayerUpdateOne) SetNillableUserID(id *int) *NBAPlayerUpdateOne {
+	if id != nil {
+		npuo = npuo.SetUserID(*id)
+	}
+	return npuo
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (npuo *NBAPlayerUpdateOne) SetUser(u *User) *NBAPlayerUpdateOne {
+	return npuo.SetUserID(u.ID)
+}
+
 // Mutation returns the NBAPlayerMutation object of the builder.
 func (npuo *NBAPlayerUpdateOne) Mutation() *NBAPlayerMutation {
 	return npuo.mutation
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (npuo *NBAPlayerUpdateOne) ClearUser() *NBAPlayerUpdateOne {
+	npuo.mutation.ClearUser()
+	return npuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -248,6 +334,41 @@ func (npuo *NBAPlayerUpdateOne) sqlSave(ctx context.Context) (_node *NBAPlayer, 
 			Value:  value,
 			Column: nbaplayer.FieldName,
 		})
+	}
+	if npuo.mutation.UserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   nbaplayer.UserTable,
+			Columns: []string{nbaplayer.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := npuo.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   nbaplayer.UserTable,
+			Columns: []string{nbaplayer.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &NBAPlayer{config: npuo.config}
 	_spec.Assign = _node.assignValues

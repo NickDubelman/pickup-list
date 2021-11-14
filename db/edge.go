@@ -20,6 +20,14 @@ func (l *List) Users(ctx context.Context) ([]*User, error) {
 	return result, err
 }
 
+func (np *NBAPlayer) User(ctx context.Context) (*User, error) {
+	result, err := np.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = np.QueryUser().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (u *User) NbaPlayer(ctx context.Context) (*NBAPlayer, error) {
 	result, err := u.Edges.NbaPlayerOrErr()
 	if IsNotLoaded(err) {

@@ -100,7 +100,7 @@ func (np *NBAPlayer) Node(ctx context.Context) (node *Node, err error) {
 		ID:     np.ID,
 		Type:   "NBAPlayer",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 0),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(np.Name); err != nil {
@@ -110,6 +110,16 @@ func (np *NBAPlayer) Node(ctx context.Context) (node *Node, err error) {
 		Type:  "string",
 		Name:  "name",
 		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "User",
+		Name: "user",
+	}
+	err = np.QueryUser().
+		Select(user.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
 	}
 	return node, nil
 }

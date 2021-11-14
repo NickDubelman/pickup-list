@@ -27,8 +27,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
-	Edges           UserEdges `json:"edges"`
-	user_nba_player *int
+	Edges UserEdges `json:"edges"`
 }
 
 // UserEdges holds the relations/edges for other nodes in the graph.
@@ -87,8 +86,6 @@ func (*User) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case user.ForeignKeys[0]: // user_nba_player
-			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type User", columns[i])
 		}
@@ -133,13 +130,6 @@ func (u *User) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				u.CreatedAt = value.Time
-			}
-		case user.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field user_nba_player", value)
-			} else if value.Valid {
-				u.user_nba_player = new(int)
-				*u.user_nba_player = int(value.Int64)
 			}
 		}
 	}

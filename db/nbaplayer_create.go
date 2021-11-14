@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/NickDubelman/pickup-list/db/nbaplayer"
+	"github.com/NickDubelman/pickup-list/db/user"
 )
 
 // NBAPlayerCreate is the builder for creating a NBAPlayer entity.
@@ -25,6 +26,25 @@ type NBAPlayerCreate struct {
 func (npc *NBAPlayerCreate) SetName(s string) *NBAPlayerCreate {
 	npc.mutation.SetName(s)
 	return npc
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (npc *NBAPlayerCreate) SetUserID(id int) *NBAPlayerCreate {
+	npc.mutation.SetUserID(id)
+	return npc
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (npc *NBAPlayerCreate) SetNillableUserID(id *int) *NBAPlayerCreate {
+	if id != nil {
+		npc = npc.SetUserID(*id)
+	}
+	return npc
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (npc *NBAPlayerCreate) SetUser(u *User) *NBAPlayerCreate {
+	return npc.SetUserID(u.ID)
 }
 
 // Mutation returns the NBAPlayerMutation object of the builder.
@@ -135,6 +155,26 @@ func (npc *NBAPlayerCreate) createSpec() (*NBAPlayer, *sqlgraph.CreateSpec) {
 			Column: nbaplayer.FieldName,
 		})
 		_node.Name = value
+	}
+	if nodes := npc.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   nbaplayer.UserTable,
+			Columns: []string{nbaplayer.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.user_nba_player = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }
