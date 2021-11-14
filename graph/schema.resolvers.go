@@ -76,6 +76,10 @@ func (r *queryResolver) Lists(ctx context.Context) ([]*db.List, error) {
 	return r.client.List.Query().All(ctx)
 }
 
+func (r *queryResolver) NbaPlayers(ctx context.Context) ([]*db.NBAPlayer, error) {
+	return r.client.NBAPlayer.Query().All(ctx)
+}
+
 func (r *queryResolver) Node(ctx context.Context, id int) (db.Noder, error) {
 	return r.client.Noder(ctx, id)
 }

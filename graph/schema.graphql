@@ -1,6 +1,7 @@
 type Query {
   user: User
   lists: [List!]!
+  nbaPlayers: [NBAPlayer!]!
 
   node(id: ID!): Node
   nodes(ids: [ID!]!): [Node]!
@@ -21,6 +22,7 @@ type User implements Node {
   email: String!
   createdAt: Time!
 
+  nbaPlayer: NBAPlayer
   lists: [List!]!
 }
 
@@ -31,6 +33,11 @@ type List implements Node {
 
   users: [User!]!
   owner: User!
+}
+
+type NBAPlayer implements Node {
+  id: ID!
+  name: String!
 }
 
 input CreateListInput {
