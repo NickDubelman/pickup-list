@@ -1,9 +1,23 @@
+<script context="module">
+  import { graphqlQuery } from '$lib/graphql'
+
+  export async function load({ fetch }) {
+    const playersQuery = `{ nbaPlayers { name } }`
+
+    try {
+      const { nbaPlayers } = await graphqlQuery(fetch, { query: playersQuery })
+      return { props: { nbaPlayers } }
+    } catch (error) {
+      return { error, status: 500 }
+    }
+  }
+</script>
+
 <script>
   import { goto } from '$app/navigation'
-  import { graphqlQuery } from '$lib/graphql'
   import { profile } from '$lib/stores/profile'
 
-  const players = ['Lebron James', 'Anthony Davis', 'Robert Sacre']
+  export let nbaPlayers
 
   let { realName, nbaName } = $profile
 
@@ -48,8 +62,8 @@
   <label for="nba-name">NBA name:</label>
   <select name="nba-name" required bind:value={nbaName}>
     <option value="" disabled selected hidden>Select a player</option>
-    {#each players as player}
-      <option value={player}>{player}</option>
+    {#each nbaPlayers as player}
+      <option value={player.name}>{player.name}</option>
     {/each}
   </select>
 
