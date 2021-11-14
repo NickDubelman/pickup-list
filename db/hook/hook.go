@@ -22,6 +22,19 @@ func (f ListFunc) Mutate(ctx context.Context, m db.Mutation) (db.Value, error) {
 	return f(ctx, mv)
 }
 
+// The NBAPlayerFunc type is an adapter to allow the use of ordinary
+// function as NBAPlayer mutator.
+type NBAPlayerFunc func(context.Context, *db.NBAPlayerMutation) (db.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f NBAPlayerFunc) Mutate(ctx context.Context, m db.Mutation) (db.Value, error) {
+	mv, ok := m.(*db.NBAPlayerMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *db.NBAPlayerMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *db.UserMutation) (db.Value, error)

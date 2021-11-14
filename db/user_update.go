@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/NickDubelman/pickup-list/db/list"
+	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/predicate"
 	"github.com/NickDubelman/pickup-list/db/user"
 )
@@ -60,6 +61,25 @@ func (uu *UserUpdate) SetNillableCreatedAt(t *time.Time) *UserUpdate {
 	return uu
 }
 
+// SetNbaPlayerID sets the "nba_player" edge to the NBAPlayer entity by ID.
+func (uu *UserUpdate) SetNbaPlayerID(id int) *UserUpdate {
+	uu.mutation.SetNbaPlayerID(id)
+	return uu
+}
+
+// SetNillableNbaPlayerID sets the "nba_player" edge to the NBAPlayer entity by ID if the given value is not nil.
+func (uu *UserUpdate) SetNillableNbaPlayerID(id *int) *UserUpdate {
+	if id != nil {
+		uu = uu.SetNbaPlayerID(*id)
+	}
+	return uu
+}
+
+// SetNbaPlayer sets the "nba_player" edge to the NBAPlayer entity.
+func (uu *UserUpdate) SetNbaPlayer(n *NBAPlayer) *UserUpdate {
+	return uu.SetNbaPlayerID(n.ID)
+}
+
 // AddOwnedListIDs adds the "owned_lists" edge to the List entity by IDs.
 func (uu *UserUpdate) AddOwnedListIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddOwnedListIDs(ids...)
@@ -93,6 +113,12 @@ func (uu *UserUpdate) AddLists(l ...*List) *UserUpdate {
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
+}
+
+// ClearNbaPlayer clears the "nba_player" edge to the NBAPlayer entity.
+func (uu *UserUpdate) ClearNbaPlayer() *UserUpdate {
+	uu.mutation.ClearNbaPlayer()
+	return uu
 }
 
 // ClearOwnedLists clears all "owned_lists" edges to the List entity.
@@ -236,6 +262,41 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Value:  value,
 			Column: user.FieldCreatedAt,
 		})
+	}
+	if uu.mutation.NbaPlayerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.NbaPlayerTable,
+			Columns: []string{user.NbaPlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: nbaplayer.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.NbaPlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.NbaPlayerTable,
+			Columns: []string{user.NbaPlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: nbaplayer.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if uu.mutation.OwnedListsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -396,6 +457,25 @@ func (uuo *UserUpdateOne) SetNillableCreatedAt(t *time.Time) *UserUpdateOne {
 	return uuo
 }
 
+// SetNbaPlayerID sets the "nba_player" edge to the NBAPlayer entity by ID.
+func (uuo *UserUpdateOne) SetNbaPlayerID(id int) *UserUpdateOne {
+	uuo.mutation.SetNbaPlayerID(id)
+	return uuo
+}
+
+// SetNillableNbaPlayerID sets the "nba_player" edge to the NBAPlayer entity by ID if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableNbaPlayerID(id *int) *UserUpdateOne {
+	if id != nil {
+		uuo = uuo.SetNbaPlayerID(*id)
+	}
+	return uuo
+}
+
+// SetNbaPlayer sets the "nba_player" edge to the NBAPlayer entity.
+func (uuo *UserUpdateOne) SetNbaPlayer(n *NBAPlayer) *UserUpdateOne {
+	return uuo.SetNbaPlayerID(n.ID)
+}
+
 // AddOwnedListIDs adds the "owned_lists" edge to the List entity by IDs.
 func (uuo *UserUpdateOne) AddOwnedListIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddOwnedListIDs(ids...)
@@ -429,6 +509,12 @@ func (uuo *UserUpdateOne) AddLists(l ...*List) *UserUpdateOne {
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
+}
+
+// ClearNbaPlayer clears the "nba_player" edge to the NBAPlayer entity.
+func (uuo *UserUpdateOne) ClearNbaPlayer() *UserUpdateOne {
+	uuo.mutation.ClearNbaPlayer()
+	return uuo
 }
 
 // ClearOwnedLists clears all "owned_lists" edges to the List entity.
@@ -596,6 +682,41 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Value:  value,
 			Column: user.FieldCreatedAt,
 		})
+	}
+	if uuo.mutation.NbaPlayerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.NbaPlayerTable,
+			Columns: []string{user.NbaPlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: nbaplayer.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.NbaPlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.NbaPlayerTable,
+			Columns: []string{user.NbaPlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: nbaplayer.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if uuo.mutation.OwnedListsCleared() {
 		edge := &sqlgraph.EdgeSpec{

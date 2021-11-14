@@ -27,6 +27,8 @@ func (User) Fields() []ent.Field {
 // Edges of the User.
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("nba_player", NBAPlayer.Type).Unique(),
+
 		edge.From("owned_lists", List.Type).
 			Ref("owner").
 			Annotations(entgql.Bind()),

@@ -10,6 +10,7 @@ import (
 	"github.com/NickDubelman/pickup-list/db/migrate"
 
 	"github.com/NickDubelman/pickup-list/db/list"
+	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/user"
 
 	"entgo.io/ent/dialect"
@@ -24,6 +25,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// List is the client for interacting with the List builders.
 	List *ListClient
+	// NBAPlayer is the client for interacting with the NBAPlayer builders.
+	NBAPlayer *NBAPlayerClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// additional fields for node api
@@ -42,6 +45,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.List = NewListClient(c.config)
+	c.NBAPlayer = NewNBAPlayerClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -74,10 +78,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		List:   NewListClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:       ctx,
+		config:    cfg,
+		List:      NewListClient(cfg),
+		NBAPlayer: NewNBAPlayerClient(cfg),
+		User:      NewUserClient(cfg),
 	}, nil
 }
 
@@ -95,9 +100,10 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		config: cfg,
-		List:   NewListClient(cfg),
-		User:   NewUserClient(cfg),
+		config:    cfg,
+		List:      NewListClient(cfg),
+		NBAPlayer: NewNBAPlayerClient(cfg),
+		User:      NewUserClient(cfg),
 	}, nil
 }
 
@@ -128,6 +134,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.List.Use(hooks...)
+	c.NBAPlayer.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
@@ -253,6 +260,96 @@ func (c *ListClient) Hooks() []Hook {
 	return c.hooks.List
 }
 
+// NBAPlayerClient is a client for the NBAPlayer schema.
+type NBAPlayerClient struct {
+	config
+}
+
+// NewNBAPlayerClient returns a client for the NBAPlayer from the given config.
+func NewNBAPlayerClient(c config) *NBAPlayerClient {
+	return &NBAPlayerClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `nbaplayer.Hooks(f(g(h())))`.
+func (c *NBAPlayerClient) Use(hooks ...Hook) {
+	c.hooks.NBAPlayer = append(c.hooks.NBAPlayer, hooks...)
+}
+
+// Create returns a create builder for NBAPlayer.
+func (c *NBAPlayerClient) Create() *NBAPlayerCreate {
+	mutation := newNBAPlayerMutation(c.config, OpCreate)
+	return &NBAPlayerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of NBAPlayer entities.
+func (c *NBAPlayerClient) CreateBulk(builders ...*NBAPlayerCreate) *NBAPlayerCreateBulk {
+	return &NBAPlayerCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for NBAPlayer.
+func (c *NBAPlayerClient) Update() *NBAPlayerUpdate {
+	mutation := newNBAPlayerMutation(c.config, OpUpdate)
+	return &NBAPlayerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *NBAPlayerClient) UpdateOne(np *NBAPlayer) *NBAPlayerUpdateOne {
+	mutation := newNBAPlayerMutation(c.config, OpUpdateOne, withNBAPlayer(np))
+	return &NBAPlayerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *NBAPlayerClient) UpdateOneID(id int) *NBAPlayerUpdateOne {
+	mutation := newNBAPlayerMutation(c.config, OpUpdateOne, withNBAPlayerID(id))
+	return &NBAPlayerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for NBAPlayer.
+func (c *NBAPlayerClient) Delete() *NBAPlayerDelete {
+	mutation := newNBAPlayerMutation(c.config, OpDelete)
+	return &NBAPlayerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *NBAPlayerClient) DeleteOne(np *NBAPlayer) *NBAPlayerDeleteOne {
+	return c.DeleteOneID(np.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *NBAPlayerClient) DeleteOneID(id int) *NBAPlayerDeleteOne {
+	builder := c.Delete().Where(nbaplayer.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &NBAPlayerDeleteOne{builder}
+}
+
+// Query returns a query builder for NBAPlayer.
+func (c *NBAPlayerClient) Query() *NBAPlayerQuery {
+	return &NBAPlayerQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a NBAPlayer entity by its id.
+func (c *NBAPlayerClient) Get(ctx context.Context, id int) (*NBAPlayer, error) {
+	return c.Query().Where(nbaplayer.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *NBAPlayerClient) GetX(ctx context.Context, id int) *NBAPlayer {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *NBAPlayerClient) Hooks() []Hook {
+	return c.hooks.NBAPlayer
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -336,6 +433,22 @@ func (c *UserClient) GetX(ctx context.Context, id int) *User {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryNbaPlayer queries the nba_player edge of a User.
+func (c *UserClient) QueryNbaPlayer(u *User) *NBAPlayerQuery {
+	query := &NBAPlayerQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(nbaplayer.Table, nbaplayer.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, user.NbaPlayerTable, user.NbaPlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryOwnedLists queries the owned_lists edge of a User.

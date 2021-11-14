@@ -8,6 +8,7 @@ require (
 	github.com/99designs/gqlgen v0.14.0
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/gocolly/colly/v2 v2.1.0
 	github.com/graphql-go/graphql v0.8.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mitchellh/mapstructure v1.4.2 // indirect

@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// List is the client for interacting with the List builders.
 	List *ListClient
+	// NBAPlayer is the client for interacting with the NBAPlayer builders.
+	NBAPlayer *NBAPlayerClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -152,6 +154,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.List = NewListClient(tx.config)
+	tx.NBAPlayer = NewNBAPlayerClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

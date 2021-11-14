@@ -33,6 +33,18 @@ func (l *ListQuery) collectField(ctx *graphql.OperationContext, field graphql.Co
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (np *NBAPlayerQuery) CollectFields(ctx context.Context, satisfies ...string) *NBAPlayerQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		np = np.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return np
+}
+
+func (np *NBAPlayerQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *NBAPlayerQuery {
+	return np
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (u *UserQuery) CollectFields(ctx context.Context, satisfies ...string) *UserQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		u = u.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)

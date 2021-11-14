@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/NickDubelman/pickup-list/db/list"
+	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/predicate"
 	"github.com/NickDubelman/pickup-list/db/user"
 
@@ -24,8 +25,9 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeList = "List"
-	TypeUser = "User"
+	TypeList      = "List"
+	TypeNBAPlayer = "NBAPlayer"
+	TypeUser      = "User"
 )
 
 // ListMutation represents an operation that mutates the List nodes in the graph.
@@ -526,6 +528,298 @@ func (m *ListMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown List edge %s", name)
 }
 
+// NBAPlayerMutation represents an operation that mutates the NBAPlayer nodes in the graph.
+type NBAPlayerMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	name          *string
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*NBAPlayer, error)
+	predicates    []predicate.NBAPlayer
+}
+
+var _ ent.Mutation = (*NBAPlayerMutation)(nil)
+
+// nbaplayerOption allows management of the mutation configuration using functional options.
+type nbaplayerOption func(*NBAPlayerMutation)
+
+// newNBAPlayerMutation creates new mutation for the NBAPlayer entity.
+func newNBAPlayerMutation(c config, op Op, opts ...nbaplayerOption) *NBAPlayerMutation {
+	m := &NBAPlayerMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeNBAPlayer,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withNBAPlayerID sets the ID field of the mutation.
+func withNBAPlayerID(id int) nbaplayerOption {
+	return func(m *NBAPlayerMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *NBAPlayer
+		)
+		m.oldValue = func(ctx context.Context) (*NBAPlayer, error) {
+			once.Do(func() {
+				if m.done {
+					err = fmt.Errorf("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().NBAPlayer.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withNBAPlayer sets the old NBAPlayer of the mutation.
+func withNBAPlayer(node *NBAPlayer) nbaplayerOption {
+	return func(m *NBAPlayerMutation) {
+		m.oldValue = func(context.Context) (*NBAPlayer, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m NBAPlayerMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m NBAPlayerMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("db: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *NBAPlayerMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetName sets the "name" field.
+func (m *NBAPlayerMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *NBAPlayerMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the NBAPlayer entity.
+// If the NBAPlayer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NBAPlayerMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *NBAPlayerMutation) ResetName() {
+	m.name = nil
+}
+
+// Where appends a list predicates to the NBAPlayerMutation builder.
+func (m *NBAPlayerMutation) Where(ps ...predicate.NBAPlayer) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *NBAPlayerMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (NBAPlayer).
+func (m *NBAPlayerMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *NBAPlayerMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.name != nil {
+		fields = append(fields, nbaplayer.FieldName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *NBAPlayerMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case nbaplayer.FieldName:
+		return m.Name()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *NBAPlayerMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case nbaplayer.FieldName:
+		return m.OldName(ctx)
+	}
+	return nil, fmt.Errorf("unknown NBAPlayer field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *NBAPlayerMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case nbaplayer.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown NBAPlayer field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *NBAPlayerMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *NBAPlayerMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *NBAPlayerMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown NBAPlayer numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *NBAPlayerMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *NBAPlayerMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *NBAPlayerMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown NBAPlayer nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *NBAPlayerMutation) ResetField(name string) error {
+	switch name {
+	case nbaplayer.FieldName:
+		m.ResetName()
+		return nil
+	}
+	return fmt.Errorf("unknown NBAPlayer field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *NBAPlayerMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *NBAPlayerMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *NBAPlayerMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *NBAPlayerMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *NBAPlayerMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *NBAPlayerMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *NBAPlayerMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown NBAPlayer unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *NBAPlayerMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown NBAPlayer edge %s", name)
+}
+
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
@@ -537,6 +831,8 @@ type UserMutation struct {
 	email              *string
 	created_at         *time.Time
 	clearedFields      map[string]struct{}
+	nba_player         *int
+	clearednba_player  bool
 	owned_lists        map[int]struct{}
 	removedowned_lists map[int]struct{}
 	clearedowned_lists bool
@@ -769,6 +1065,45 @@ func (m *UserMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *UserMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetNbaPlayerID sets the "nba_player" edge to the NBAPlayer entity by id.
+func (m *UserMutation) SetNbaPlayerID(id int) {
+	m.nba_player = &id
+}
+
+// ClearNbaPlayer clears the "nba_player" edge to the NBAPlayer entity.
+func (m *UserMutation) ClearNbaPlayer() {
+	m.clearednba_player = true
+}
+
+// NbaPlayerCleared reports if the "nba_player" edge to the NBAPlayer entity was cleared.
+func (m *UserMutation) NbaPlayerCleared() bool {
+	return m.clearednba_player
+}
+
+// NbaPlayerID returns the "nba_player" edge ID in the mutation.
+func (m *UserMutation) NbaPlayerID() (id int, exists bool) {
+	if m.nba_player != nil {
+		return *m.nba_player, true
+	}
+	return
+}
+
+// NbaPlayerIDs returns the "nba_player" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// NbaPlayerID instead. It exists only for internal usage by the builders.
+func (m *UserMutation) NbaPlayerIDs() (ids []int) {
+	if id := m.nba_player; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetNbaPlayer resets all changes to the "nba_player" edge.
+func (m *UserMutation) ResetNbaPlayer() {
+	m.nba_player = nil
+	m.clearednba_player = false
 }
 
 // AddOwnedListIDs adds the "owned_lists" edge to the List entity by ids.
@@ -1048,7 +1383,10 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.nba_player != nil {
+		edges = append(edges, user.EdgeNbaPlayer)
+	}
 	if m.owned_lists != nil {
 		edges = append(edges, user.EdgeOwnedLists)
 	}
@@ -1062,6 +1400,10 @@ func (m *UserMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *UserMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case user.EdgeNbaPlayer:
+		if id := m.nba_player; id != nil {
+			return []ent.Value{*id}
+		}
 	case user.EdgeOwnedLists:
 		ids := make([]ent.Value, 0, len(m.owned_lists))
 		for id := range m.owned_lists {
@@ -1080,7 +1422,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedowned_lists != nil {
 		edges = append(edges, user.EdgeOwnedLists)
 	}
@@ -1112,7 +1454,10 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.clearednba_player {
+		edges = append(edges, user.EdgeNbaPlayer)
+	}
 	if m.clearedowned_lists {
 		edges = append(edges, user.EdgeOwnedLists)
 	}
@@ -1126,6 +1471,8 @@ func (m *UserMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *UserMutation) EdgeCleared(name string) bool {
 	switch name {
+	case user.EdgeNbaPlayer:
+		return m.clearednba_player
 	case user.EdgeOwnedLists:
 		return m.clearedowned_lists
 	case user.EdgeLists:
@@ -1138,6 +1485,9 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *UserMutation) ClearEdge(name string) error {
 	switch name {
+	case user.EdgeNbaPlayer:
+		m.ClearNbaPlayer()
+		return nil
 	}
 	return fmt.Errorf("unknown User unique edge %s", name)
 }
@@ -1146,6 +1496,9 @@ func (m *UserMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *UserMutation) ResetEdge(name string) error {
 	switch name {
+	case user.EdgeNbaPlayer:
+		m.ResetNbaPlayer()
+		return nil
 	case user.EdgeOwnedLists:
 		m.ResetOwnedLists()
 		return nil

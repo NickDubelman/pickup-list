@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/user"
 )
 
@@ -26,24 +27,41 @@ type User struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
-	Edges UserEdges `json:"edges"`
+	Edges           UserEdges `json:"edges"`
+	user_nba_player *int
 }
 
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
+	// NbaPlayer holds the value of the nba_player edge.
+	NbaPlayer *NBAPlayer `json:"nba_player,omitempty"`
 	// OwnedLists holds the value of the owned_lists edge.
 	OwnedLists []*List `json:"owned_lists,omitempty"`
 	// Lists holds the value of the lists edge.
 	Lists []*List `json:"lists,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// NbaPlayerOrErr returns the NbaPlayer value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) NbaPlayerOrErr() (*NBAPlayer, error) {
+	if e.loadedTypes[0] {
+		if e.NbaPlayer == nil {
+			// The edge nba_player was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: nbaplayer.Label}
+		}
+		return e.NbaPlayer, nil
+	}
+	return nil, &NotLoadedError{edge: "nba_player"}
 }
 
 // OwnedListsOrErr returns the OwnedLists value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) OwnedListsOrErr() ([]*List, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.OwnedLists, nil
 	}
 	return nil, &NotLoadedError{edge: "owned_lists"}
@@ -52,7 +70,7 @@ func (e UserEdges) OwnedListsOrErr() ([]*List, error) {
 // ListsOrErr returns the Lists value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ListsOrErr() ([]*List, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Lists, nil
 	}
 	return nil, &NotLoadedError{edge: "lists"}
@@ -69,6 +87,8 @@ func (*User) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
+		case user.ForeignKeys[0]: // user_nba_player
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type User", columns[i])
 		}
@@ -114,9 +134,21 @@ func (u *User) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				u.CreatedAt = value.Time
 			}
+		case user.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field user_nba_player", value)
+			} else if value.Valid {
+				u.user_nba_player = new(int)
+				*u.user_nba_player = int(value.Int64)
+			}
 		}
 	}
 	return nil
+}
+
+// QueryNbaPlayer queries the "nba_player" edge of the User entity.
+func (u *User) QueryNbaPlayer() *NBAPlayerQuery {
+	return (&UserClient{config: u.config}).QueryNbaPlayer(u)
 }
 
 // QueryOwnedLists queries the "owned_lists" edge of the User entity.

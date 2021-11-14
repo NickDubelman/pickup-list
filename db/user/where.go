@@ -530,6 +530,34 @@ func CreatedAtLTE(v time.Time) predicate.User {
 	})
 }
 
+// HasNbaPlayer applies the HasEdge predicate on the "nba_player" edge.
+func HasNbaPlayer() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(NbaPlayerTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, NbaPlayerTable, NbaPlayerColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNbaPlayerWith applies the HasEdge predicate on the "nba_player" edge with a given conditions (other predicates).
+func HasNbaPlayerWith(preds ...predicate.NBAPlayer) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(NbaPlayerInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, NbaPlayerTable, NbaPlayerColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasOwnedLists applies the HasEdge predicate on the "owned_lists" edge.
 func HasOwnedLists() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

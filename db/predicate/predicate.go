@@ -9,5 +9,8 @@ import (
 // List is the predicate function for list builders.
 type List func(*sql.Selector)
 
+// NBAPlayer is the predicate function for nbaplayer builders.
+type NBAPlayer func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

@@ -20,6 +20,14 @@ func (l *List) Users(ctx context.Context) ([]*User, error) {
 	return result, err
 }
 
+func (u *User) NbaPlayer(ctx context.Context) (*NBAPlayer, error) {
+	result, err := u.Edges.NbaPlayerOrErr()
+	if IsNotLoaded(err) {
+		result, err = u.QueryNbaPlayer().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (u *User) OwnedLists(ctx context.Context) ([]*List, error) {
 	result, err := u.Edges.OwnedListsOrErr()
 	if IsNotLoaded(err) {

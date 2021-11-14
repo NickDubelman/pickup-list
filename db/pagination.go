@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
 	"github.com/NickDubelman/pickup-list/db/list"
+	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/user"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/vmihailenco/msgpack/v5"
@@ -457,6 +458,233 @@ func (l *List) ToEdge(order *ListOrder) *ListEdge {
 	return &ListEdge{
 		Node:   l,
 		Cursor: order.Field.toCursor(l),
+	}
+}
+
+// NBAPlayerEdge is the edge representation of NBAPlayer.
+type NBAPlayerEdge struct {
+	Node   *NBAPlayer `json:"node"`
+	Cursor Cursor     `json:"cursor"`
+}
+
+// NBAPlayerConnection is the connection containing edges to NBAPlayer.
+type NBAPlayerConnection struct {
+	Edges      []*NBAPlayerEdge `json:"edges"`
+	PageInfo   PageInfo         `json:"pageInfo"`
+	TotalCount int              `json:"totalCount"`
+}
+
+// NBAPlayerPaginateOption enables pagination customization.
+type NBAPlayerPaginateOption func(*nBAPlayerPager) error
+
+// WithNBAPlayerOrder configures pagination ordering.
+func WithNBAPlayerOrder(order *NBAPlayerOrder) NBAPlayerPaginateOption {
+	if order == nil {
+		order = DefaultNBAPlayerOrder
+	}
+	o := *order
+	return func(pager *nBAPlayerPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultNBAPlayerOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithNBAPlayerFilter configures pagination filter.
+func WithNBAPlayerFilter(filter func(*NBAPlayerQuery) (*NBAPlayerQuery, error)) NBAPlayerPaginateOption {
+	return func(pager *nBAPlayerPager) error {
+		if filter == nil {
+			return errors.New("NBAPlayerQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type nBAPlayerPager struct {
+	order  *NBAPlayerOrder
+	filter func(*NBAPlayerQuery) (*NBAPlayerQuery, error)
+}
+
+func newNBAPlayerPager(opts []NBAPlayerPaginateOption) (*nBAPlayerPager, error) {
+	pager := &nBAPlayerPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultNBAPlayerOrder
+	}
+	return pager, nil
+}
+
+func (p *nBAPlayerPager) applyFilter(query *NBAPlayerQuery) (*NBAPlayerQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *nBAPlayerPager) toCursor(np *NBAPlayer) Cursor {
+	return p.order.Field.toCursor(np)
+}
+
+func (p *nBAPlayerPager) applyCursors(query *NBAPlayerQuery, after, before *Cursor) *NBAPlayerQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultNBAPlayerOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *nBAPlayerPager) applyOrder(query *NBAPlayerQuery, reverse bool) *NBAPlayerQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultNBAPlayerOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultNBAPlayerOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to NBAPlayer.
+func (np *NBAPlayerQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...NBAPlayerPaginateOption,
+) (*NBAPlayerConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newNBAPlayerPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if np, err = pager.applyFilter(np); err != nil {
+		return nil, err
+	}
+
+	conn := &NBAPlayerConnection{Edges: []*NBAPlayerEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := np.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := np.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	np = pager.applyCursors(np, after, before)
+	np = pager.applyOrder(np, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		np = np.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		np = np.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := np.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *NBAPlayer
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *NBAPlayer {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *NBAPlayer {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*NBAPlayerEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &NBAPlayerEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+// NBAPlayerOrderField defines the ordering field of NBAPlayer.
+type NBAPlayerOrderField struct {
+	field    string
+	toCursor func(*NBAPlayer) Cursor
+}
+
+// NBAPlayerOrder defines the ordering of NBAPlayer.
+type NBAPlayerOrder struct {
+	Direction OrderDirection       `json:"direction"`
+	Field     *NBAPlayerOrderField `json:"field"`
+}
+
+// DefaultNBAPlayerOrder is the default ordering of NBAPlayer.
+var DefaultNBAPlayerOrder = &NBAPlayerOrder{
+	Direction: OrderDirectionAsc,
+	Field: &NBAPlayerOrderField{
+		field: nbaplayer.FieldID,
+		toCursor: func(np *NBAPlayer) Cursor {
+			return Cursor{ID: np.ID}
+		},
+	},
+}
+
+// ToEdge converts NBAPlayer into NBAPlayerEdge.
+func (np *NBAPlayer) ToEdge(order *NBAPlayerOrder) *NBAPlayerEdge {
+	if order == nil {
+		order = DefaultNBAPlayerOrder
+	}
+	return &NBAPlayerEdge{
+		Node:   np,
+		Cursor: order.Field.toCursor(np),
 	}
 }
 

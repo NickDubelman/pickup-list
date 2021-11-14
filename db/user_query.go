@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/NickDubelman/pickup-list/db/list"
+	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/predicate"
 	"github.com/NickDubelman/pickup-list/db/user"
 )
@@ -27,8 +28,10 @@ type UserQuery struct {
 	fields     []string
 	predicates []predicate.User
 	// eager-loading edges.
+	withNbaPlayer  *NBAPlayerQuery
 	withOwnedLists *ListQuery
 	withLists      *ListQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -63,6 +66,28 @@ func (uq *UserQuery) Unique(unique bool) *UserQuery {
 func (uq *UserQuery) Order(o ...OrderFunc) *UserQuery {
 	uq.order = append(uq.order, o...)
 	return uq
+}
+
+// QueryNbaPlayer chains the current query on the "nba_player" edge.
+func (uq *UserQuery) QueryNbaPlayer() *NBAPlayerQuery {
+	query := &NBAPlayerQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(nbaplayer.Table, nbaplayer.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, user.NbaPlayerTable, user.NbaPlayerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryOwnedLists chains the current query on the "owned_lists" edge.
@@ -290,12 +315,24 @@ func (uq *UserQuery) Clone() *UserQuery {
 		offset:         uq.offset,
 		order:          append([]OrderFunc{}, uq.order...),
 		predicates:     append([]predicate.User{}, uq.predicates...),
+		withNbaPlayer:  uq.withNbaPlayer.Clone(),
 		withOwnedLists: uq.withOwnedLists.Clone(),
 		withLists:      uq.withLists.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
 		path: uq.path,
 	}
+}
+
+// WithNbaPlayer tells the query-builder to eager-load the nodes that are connected to
+// the "nba_player" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithNbaPlayer(opts ...func(*NBAPlayerQuery)) *UserQuery {
+	query := &NBAPlayerQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withNbaPlayer = query
+	return uq
 }
 
 // WithOwnedLists tells the query-builder to eager-load the nodes that are connected to
@@ -384,12 +421,20 @@ func (uq *UserQuery) prepareQuery(ctx context.Context) error {
 func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 	var (
 		nodes       = []*User{}
+		withFKs     = uq.withFKs
 		_spec       = uq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			uq.withNbaPlayer != nil,
 			uq.withOwnedLists != nil,
 			uq.withLists != nil,
 		}
 	)
+	if uq.withNbaPlayer != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, user.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &User{config: uq.config}
 		nodes = append(nodes, node)
@@ -408,6 +453,35 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+
+	if query := uq.withNbaPlayer; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*User)
+		for i := range nodes {
+			if nodes[i].user_nba_player == nil {
+				continue
+			}
+			fk := *nodes[i].user_nba_player
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(nbaplayer.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "user_nba_player" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.NbaPlayer = n
+			}
+		}
 	}
 
 	if query := uq.withOwnedLists; query != nil {

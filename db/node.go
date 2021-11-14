@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/NickDubelman/pickup-list/db/list"
+	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/user"
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/sync/semaphore"
@@ -94,12 +95,31 @@ func (l *List) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
+func (np *NBAPlayer) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     np.ID,
+		Type:   "NBAPlayer",
+		Fields: make([]*Field, 1),
+		Edges:  make([]*Edge, 0),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(np.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	return node, nil
+}
+
 func (u *User) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     u.ID,
 		Type:   "User",
 		Fields: make([]*Field, 4),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(u.RealName); err != nil {
@@ -135,22 +155,32 @@ func (u *User) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "List",
-		Name: "owned_lists",
+		Type: "NBAPlayer",
+		Name: "nba_player",
 	}
-	err = u.QueryOwnedLists().
-		Select(list.FieldID).
+	err = u.QueryNbaPlayer().
+		Select(nbaplayer.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
 		Type: "List",
+		Name: "owned_lists",
+	}
+	err = u.QueryOwnedLists().
+		Select(list.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "List",
 		Name: "lists",
 	}
 	err = u.QueryLists().
 		Select(list.FieldID).
-		Scan(ctx, &node.Edges[1].IDs)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -228,6 +258,15 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 		n, err := c.List.Query().
 			Where(list.ID(id)).
 			CollectFields(ctx, "List").
+			Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
+	case nbaplayer.Table:
+		n, err := c.NBAPlayer.Query().
+			Where(nbaplayer.ID(id)).
+			CollectFields(ctx, "NBAPlayer").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -319,6 +358,19 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		nodes, err := c.List.Query().
 			Where(list.IDIn(ids...)).
 			CollectFields(ctx, "List").
+			All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case nbaplayer.Table:
+		nodes, err := c.NBAPlayer.Query().
+			Where(nbaplayer.IDIn(ids...)).
+			CollectFields(ctx, "NBAPlayer").
 			All(ctx)
 		if err != nil {
 			return nil, err
