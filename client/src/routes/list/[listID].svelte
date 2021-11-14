@@ -37,7 +37,8 @@
 
   $: alreadyJoined = list.users.find(
     user =>
-      user.realName === $profile.realName && user.nbaPlayer.name === $profile.nbaName
+      user.realName === $profile.realName &&
+      user.nbaPlayer?.name === $profile.nbaName
   )
 
   const joinListMutation = `
@@ -102,7 +103,12 @@
 {#if list.users.length > 0}
   <ol>
     {#each list.users as { realName, nbaPlayer }}
-      <li>{realName} ({nbaPlayer.name})</li>
+      <li>
+        {realName}
+        {#if nbaPlayer}
+          ({nbaPlayer.name})
+        {/if}
+      </li>
     {/each}
   </ol>
 {:else}

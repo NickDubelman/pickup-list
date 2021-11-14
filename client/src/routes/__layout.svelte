@@ -15,7 +15,7 @@
         props: {
           user: {
             realName: user.realName,
-            nbaName: user.nbaPlayer.name
+            nbaName: user.nbaPlayer?.name
           }
         }
       }
