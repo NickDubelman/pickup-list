@@ -51,7 +51,7 @@ func AccessTokenFromContext(ctx context.Context) (string, error) {
 
 	accessToken, ok := ctxValue.(string)
 	if !ok {
-		return "", fmt.Errorf("Expected accessToken to have type string")
+		return "", fmt.Errorf("expected accessToken to have type string")
 	}
 
 	return accessToken, nil
@@ -60,13 +60,12 @@ func AccessTokenFromContext(ctx context.Context) (string, error) {
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		authHeader := strings.Split(req.Header.Get("Authorization"), "Token ")
-		if len(authHeader) != 2 {
-			fmt.Println("Malformed token")
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Malformed Token"))
+		if len(authHeader) == 2 {
+			// Attach accessToken to request context, if given
+			req = req.WithContext(
+				ContextWithAccessToken(req.Context(), authHeader[1]),
+			)
 		}
-
-		req = req.WithContext(ContextWithAccessToken(req.Context(), authHeader[1]))
 
 		// Do stuff
 		next.ServeHTTP(w, req)

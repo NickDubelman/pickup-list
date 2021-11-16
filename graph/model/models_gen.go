@@ -10,6 +10,10 @@ type JoinListInput struct {
 	ListID int `json:"listID"`
 }
 
+type RefreshTokenInput struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
 type SetUserInput struct {
 	RealName string `json:"realName"`
 	NbaName  string `json:"nbaName"`

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	accessTokenDuration  = 5 * time.Minute
+	accessTokenDuration  = 5 * time.Minute    // 5 minutes
 	refreshTokenDuration = 7 * 24 * time.Hour // 7 days
 
 	authSecret = "TODO: make this a secret"
@@ -39,9 +39,13 @@ type refreshClaims struct {
 // a new accessToken for the user
 func RefreshAccessToken(
 	ctx context.Context,
-	accessToken string,
 	refreshToken string,
 ) (string, error) {
+	accessToken, err := AccessTokenFromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+
 	// Parse the access token
 	aClaims := &UserInfo{}
 	tkn, err := parseToken(accessToken, aClaims)

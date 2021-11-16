@@ -55,10 +55,11 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateList func(childComplexity int, input model.CreateListInput) int
-		JoinList   func(childComplexity int, input model.JoinListInput) int
-		SetUser    func(childComplexity int, input model.SetUserInput) int
-		UnjoinList func(childComplexity int, input model.JoinListInput) int
+		CreateList   func(childComplexity int, input model.CreateListInput) int
+		JoinList     func(childComplexity int, input model.JoinListInput) int
+		RefreshToken func(childComplexity int, input model.RefreshTokenInput) int
+		SetUser      func(childComplexity int, input model.SetUserInput) int
+		UnjoinList   func(childComplexity int, input model.JoinListInput) int
 	}
 
 	NBAPlayer struct {
@@ -89,6 +90,7 @@ type MutationResolver interface {
 	JoinList(ctx context.Context, input model.JoinListInput) (*db.List, error)
 	UnjoinList(ctx context.Context, input model.JoinListInput) (*db.List, error)
 	SetUser(ctx context.Context, input model.SetUserInput) (*db.User, error)
+	RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context) (*db.User, error)
@@ -171,6 +173,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.JoinList(childComplexity, args["input"].(model.JoinListInput)), true
+
+	case "Mutation.refreshToken":
+		if e.complexity.Mutation.RefreshToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_refreshToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RefreshToken(childComplexity, args["input"].(model.RefreshTokenInput)), true
 
 	case "Mutation.setUser":
 		if e.complexity.Mutation.SetUser == nil {
@@ -376,6 +390,7 @@ type Mutation {
   unjoinList(input: JoinListInput!): List!
 
   setUser(input: SetUserInput!): User!
+  refreshToken(input: RefreshTokenInput!): String!
 }
 
 type User implements Node {
@@ -415,6 +430,10 @@ input SetUserInput {
   nbaName: String!
 }
 
+input RefreshTokenInput {
+  refreshToken: String!
+}
+
 interface Node {
   id: ID!
 }
@@ -450,6 +469,21 @@ func (ec *executionContext) field_Mutation_joinList_args(ctx context.Context, ra
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNJoinListInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐJoinListInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_refreshToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.RefreshTokenInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNRefreshTokenInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐRefreshTokenInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -912,6 +946,48 @@ func (ec *executionContext) _Mutation_setUser(ctx context.Context, field graphql
 	res := resTmp.(*db.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_refreshToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_refreshToken_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RefreshToken(rctx, args["input"].(model.RefreshTokenInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _NBAPlayer_id(ctx context.Context, field graphql.CollectedField, obj *db.NBAPlayer) (ret graphql.Marshaler) {
@@ -2613,6 +2689,29 @@ func (ec *executionContext) unmarshalInputJoinListInput(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRefreshTokenInput(ctx context.Context, obj interface{}) (model.RefreshTokenInput, error) {
+	var it model.RefreshTokenInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "refreshToken":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("refreshToken"))
+			it.RefreshToken, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSetUserInput(ctx context.Context, obj interface{}) (model.SetUserInput, error) {
 	var it model.SetUserInput
 	asMap := map[string]interface{}{}
@@ -2773,6 +2872,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "setUser":
 			out.Values[i] = ec._Mutation_setUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "refreshToken":
+			out.Values[i] = ec._Mutation_refreshToken(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -3454,6 +3558,11 @@ func (ec *executionContext) marshalNNode2ᚕgithubᚗcomᚋNickDubelmanᚋpickup
 	wg.Wait()
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNRefreshTokenInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐRefreshTokenInput(ctx context.Context, v interface{}) (model.RefreshTokenInput, error) {
+	res, err := ec.unmarshalInputRefreshTokenInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNSetUserInput2githubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋgraphᚋmodelᚐSetUserInput(ctx context.Context, v interface{}) (model.SetUserInput, error) {

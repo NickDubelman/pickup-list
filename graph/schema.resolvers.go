@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/NickDubelman/pickup-list/auth"
 	"github.com/NickDubelman/pickup-list/db"
 	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/db/user"
@@ -88,10 +89,17 @@ func (r *mutationResolver) SetUser(ctx context.Context, input model.SetUserInput
 	return update.Save(ctx)
 }
 
+func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error) {
+	return auth.RefreshAccessToken(ctx, input.RefreshToken)
+}
+
 func (r *queryResolver) User(ctx context.Context) (*db.User, error) {
-	return r.client.User.Query().
-		Where(user.Email(testUser)).
-		Only(ctx)
+	user, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.client.User.Get(ctx, user.ID())
 }
 
 func (r *queryResolver) Lists(ctx context.Context) ([]*db.List, error) {

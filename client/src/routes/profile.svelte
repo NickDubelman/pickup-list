@@ -21,7 +21,7 @@
 
   let { realName, nbaName } = $profile
 
-  const canSubmit = realName !== ''
+  $: canSubmit = realName !== ''
 
   const setUserMutation = `
     mutation SetUser($input: SetUserInput!){

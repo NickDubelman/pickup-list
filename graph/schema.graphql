@@ -13,6 +13,7 @@ type Mutation {
   unjoinList(input: JoinListInput!): List!
 
   setUser(input: SetUserInput!): User!
+  refreshToken(input: RefreshTokenInput!): String!
 }
 
 type User implements Node {
@@ -50,6 +51,10 @@ input JoinListInput {
 input SetUserInput {
   realName: String!
   nbaName: String!
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
 }
 
 interface Node {
