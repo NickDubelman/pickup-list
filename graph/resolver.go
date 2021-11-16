@@ -15,6 +15,3 @@ func NewSchema(client *db.Client) graphql.ExecutableSchema {
 		Resolvers: &Resolver{client},
 	})
 }
-
-// TODO: this exists temporarily, until I've implemented auth
-const testUser = "ndubelman@gmail.com"

@@ -10,31 +10,29 @@ import (
 	"github.com/NickDubelman/pickup-list/auth"
 	"github.com/NickDubelman/pickup-list/db"
 	"github.com/NickDubelman/pickup-list/db/nbaplayer"
-	"github.com/NickDubelman/pickup-list/db/user"
 	"github.com/NickDubelman/pickup-list/graph/generated"
 	"github.com/NickDubelman/pickup-list/graph/model"
 )
 
 func (r *mutationResolver) CreateList(ctx context.Context, input model.CreateListInput) (*db.List, error) {
-	owner, err := r.client.User.Query().
-		Where(user.Email(testUser)).
-		Only(ctx)
-
+	userInfo, err := auth.UserFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	return r.client.List.Create().
 		SetName(input.Name).
-		SetOwner(owner).
+		SetOwnerID(userInfo.ID()).
 		Save(ctx)
 }
 
 func (r *mutationResolver) JoinList(ctx context.Context, input model.JoinListInput) (*db.List, error) {
-	user, err := r.client.User.Query().
-		Where(user.Email(testUser)).
-		Only(ctx)
+	userInfo, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
+	user, err := r.client.User.Get(ctx, userInfo.ID())
 	if err != nil {
 		return nil, err
 	}
@@ -43,10 +41,12 @@ func (r *mutationResolver) JoinList(ctx context.Context, input model.JoinListInp
 }
 
 func (r *mutationResolver) UnjoinList(ctx context.Context, input model.JoinListInput) (*db.List, error) {
-	user, err := r.client.User.Query().
-		Where(user.Email(testUser)).
-		Only(ctx)
+	userInfo, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
+	user, err := r.client.User.Get(ctx, userInfo.ID())
 	if err != nil {
 		return nil, err
 	}
@@ -55,16 +55,20 @@ func (r *mutationResolver) UnjoinList(ctx context.Context, input model.JoinListI
 }
 
 func (r *mutationResolver) SetUser(ctx context.Context, input model.SetUserInput) (*db.User, error) {
-	user, err := r.client.User.Query().
-		Where(user.Email(testUser)).
-		Only(ctx)
+	userInfo, err := auth.UserFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
+	user, err := r.client.User.Get(ctx, userInfo.ID())
 	if err != nil {
 		return nil, err
 	}
 
 	update := user.Update().SetRealName(input.RealName).ClearNbaPlayer()
 
+	// If user has selected an NBA player, make sure the player is not already
+	// represented by another user
 	if input.NbaName != "" {
 		nbaPlayer, err := r.client.NBAPlayer.Query().
 			Where(nbaplayer.Name((input.NbaName))).
@@ -75,7 +79,7 @@ func (r *mutationResolver) SetUser(ctx context.Context, input model.SetUserInput
 			return nil, err
 		}
 
-		if nbaPlayer.Edges.User != nil {
+		if nbaPlayer.Edges.User != nil && nbaPlayer.Edges.User.ID != userInfo.ID() {
 			suffix := "Choose a player who is not already represented"
 			user := nbaPlayer.Edges.User.RealName
 			return nil, fmt.Errorf(
