@@ -39,17 +39,6 @@ func main() {
 		log.Fatal("running schema migration", err)
 	}
 
-	// Create a user
-	user, err := client.User.Create().
-		SetRealName("Nick Dubelman").
-		SetEmail("ndubelman@gmail.com").
-		Save(ctx)
-	if err != nil {
-		log.Println("could not create user:", err)
-	} else {
-		log.Println("created user:", user)
-	}
-
 	graphQLServer := handler.NewDefaultServer(graph.NewSchema(client))
 
 	mux := http.NewServeMux()

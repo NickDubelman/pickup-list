@@ -2,21 +2,19 @@
   import { page } from '$app/stores'
 
   const links = [
-    { href: '/lists', label: 'Home' },
+    { href: '/', label: 'Home' },
     { href: '/profile', label: 'Profile' },
     { href: '/lists/history', label: 'History' }
   ]
 </script>
 
-{#if $page.path !== '/'}
-  <nav>
-    {#each links as { href, label }}
-      <a {href} class:active={$page.path === href}>{label}</a>
-    {/each}
+<nav>
+  {#each links as { href, label }}
+    <a {href} class:active={$page.path === href}>{label}</a>
+  {/each}
 
-    <a class="logout" href="/">Logout</a>
-  </nav>
-{/if}
+  <a class="logout" href="/auth/logout">Logout</a>
+</nav>
 
 <style>
   nav {

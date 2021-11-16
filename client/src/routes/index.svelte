@@ -1,34 +1,60 @@
-<script>
-  import { goto } from '$app/navigation'
+<script context="module">
+  export async function load({ fetch }) {
+    const listsQuery = `{
+      lists {
+        id
+        name
+        users {
+          id
+          realName
+          nbaPlayer { name }
+        }
+      }
+    }`
 
-  let password = ''
-
-  function handleSubmit() {
-    if (password === 'yekshimesh') {
-      goto('/profile')
-    } else {
-      alert('wrong password')
+    try {
+      const { lists } = await graphqlQuery(fetch, { query: listsQuery })
+      return { props: { listData: lists } }
+    } catch (error) {
+      return { error, status: 500 }
     }
   }
 </script>
 
-<div>
-  <h1>🏀 🏀 🏀 Pickup List 🏀 🏀 🏀</h1>
-  <p>Add yourself to a list of people who want to play pickup...</p>
+<script>
+  import { lists } from '$lib/stores/lists'
 
-  <form on:submit|preventDefault={handleSubmit}>
-    <p>Enter the secret password</p>
-    <input type="password" bind:value={password} />
+  import AddList from '$lib/AddList.svelte'
+  import { graphqlQuery } from '$lib/graphql'
 
-    <button type="submit" disabled={password === ''}>Go</button>
-  </form>
-</div>
+  export let listData
+  lists.set(listData)
+</script>
+
+<h1>Lists for this week</h1>
+<h3>Monday October 25 ➜ Sunday October 31</h3>
+
+<AddList />
+
+{#if $lists.length > 0}
+  {#each $lists as { id, name }}
+    <a href={`/list/${id}`}>{name}</a>
+  {/each}
+{:else}
+  <div>No lists have been added yet</div>
+{/if}
 
 <style>
-  div {
-    border: 1px solid purple;
-    padding: 0 24px 24px 24px;
-    margin: auto;
-    width: 420px;
+  h1 {
+    margin-bottom: 4px;
+  }
+  h3 {
+    margin-top: 4px;
+  }
+
+  a {
+    display: block;
+    font-size: 1.24em;
+    margin-top: 8px;
   }
 </style>

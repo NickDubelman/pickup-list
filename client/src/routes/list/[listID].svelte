@@ -38,7 +38,7 @@
   $: alreadyJoined = list.users.find(
     user =>
       user.realName === $profile.realName &&
-      user.nbaPlayer?.name === $profile.nbaName
+      (user.nbaPlayer?.name || '') === $profile.nbaName
   )
 
   const joinListMutation = `
@@ -88,16 +88,18 @@
       alert(e)
     }
   }
+
+  const profileLink = `/profile?next=${$page.params.listID}`
 </script>
 
 <h1>{list.name}</h1>
 
-{#if $profile && !alreadyJoined}
+{#if $profile && $profile.realName && !alreadyJoined}
   <button on:click={onJoin}>Join this list</button>
 {:else if $profile && alreadyJoined}
   <button on:click={onUnjoin}>Remove yourself from this list</button>
 {:else}
-  To join lists, you must first set your <a href="/profile">profile</a>
+  To join lists, you must first set your <a href={profileLink}>profile</a>
 {/if}
 
 {#if list.users.length > 0}

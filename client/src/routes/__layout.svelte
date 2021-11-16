@@ -13,9 +13,9 @@
       const { user } = await graphqlQuery(fetch, { query: userQuery })
       return {
         props: {
-          user: {
+          user: user && {
             realName: user.realName,
-            nbaName: user.nbaPlayer?.name
+            nbaName: user.nbaPlayer?.name || ''
           }
         }
       }
@@ -25,11 +25,12 @@
   }
 </script>
 
-<script>
+<script lang="ts">
   import Nav from '$lib/Nav.svelte'
   import { profile } from '$lib/stores/profile'
+  import Landing from './_landing.svelte'
 
-  export let user = { realName: '', nbaName: '' }
+  export let user = null
   profile.set(user)
 </script>
 
@@ -37,11 +38,15 @@
   <title>Pickup List</title>
 </svelte:head>
 
-<Nav />
+{#if user}
+  <Nav />
 
-<div>
-  <slot />
-</div>
+  <div>
+    <slot />
+  </div>
+{:else}
+  <Landing />
+{/if}
 
 <style>
   div {

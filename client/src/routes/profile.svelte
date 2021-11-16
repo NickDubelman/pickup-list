@@ -14,12 +14,16 @@
 </script>
 
 <script>
+  import { page } from '$app/stores'
   import { goto } from '$app/navigation'
+
   import { profile } from '$lib/stores/profile'
 
   export let nbaPlayers
 
-  let { realName, nbaName } = $profile
+  const user = $profile
+  let realName = user?.realName || ''
+  let nbaName = user?.nbaName || ''
 
   $: canSubmit = realName !== ''
 
@@ -39,16 +43,20 @@
         query: setUserMutation,
         variables: { input: { realName, nbaName } }
       })
-      profile.set({ ...$profile, realName, nbaName })
+      profile.set({ realName, nbaName })
       alert('Updated profile!')
-      goto('/lists')
+
+      const nextListID = $page.query.get('next')
+      if (nextListID) {
+        goto(`/list/${nextListID}`)
+      }
     } catch (e) {
       alert(e)
     }
   }
 </script>
 
-<h1>Create your profile</h1>
+<h1>Set your profile</h1>
 
 <form on:submit|preventDefault={handleSubmit}>
   <div>
@@ -62,7 +70,7 @@
   </div>
 
   <div>
-    <label for="nba-name">NBA name:</label>
+    <label for="nba-name">NBA name (optional):</label>
     <select name="nba-name" bind:value={nbaName}>
       <option value="" disabled selected hidden>Select a player</option>
       {#each nbaPlayers as player}

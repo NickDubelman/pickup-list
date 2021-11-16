@@ -96,6 +96,9 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 func (r *queryResolver) User(ctx context.Context) (*db.User, error) {
 	user, err := auth.UserFromContext(ctx)
 	if err != nil {
+		if _, ok := err.(auth.NotAuthorized); ok {
+			return nil, nil
+		}
 		return nil, err
 	}
 
