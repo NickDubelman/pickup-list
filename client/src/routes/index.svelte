@@ -1,19 +1,24 @@
 <script context="module">
   export async function load({ fetch }) {
-    const listsQuery = `{
-      lists {
-        id
-        name
-        users {
+    const listsQuery = `
+      query ListsQuery($from: Time!){
+        lists(from: $from){
           id
-          realName
-          nbaPlayer { name }
+          name
+          users {
+            id
+            realName
+            nbaPlayer { name }
+          }
         }
       }
-    }`
+    `
 
     try {
-      const { lists } = await graphqlQuery(fetch, { query: listsQuery })
+      const { lists } = await graphqlQuery(fetch, {
+        query: listsQuery,
+        variables: { from: getStartOfPrevSunday().toISOString() }
+      })
       return { props: { listData: lists } }
     } catch (error) {
       return { error, status: 500 }
@@ -21,18 +26,24 @@
   }
 </script>
 
-<script>
+<script lang="ts">
   import { lists } from '$lib/stores/lists'
 
   import AddList from '$lib/AddList.svelte'
   import { graphqlQuery } from '$lib/graphql'
+  import { getStartOfPrevSunday, monthNames } from '$lib/dateutils'
 
   export let listData
   lists.set(listData)
+
+  const prevSunday = getStartOfPrevSunday()
+
+  const formatDate = (date: Date) => {
+    return `${monthNames[date.getMonth()]} ${date.getDate()}`
+  }
 </script>
 
-<h1>Lists for this week</h1>
-<h3>Monday October 25 ➜ Sunday October 31</h3>
+<h1>Lists for week of {formatDate(prevSunday)}</h1>
 
 <AddList />
 
@@ -47,9 +58,6 @@
 <style>
   h1 {
     margin-bottom: 4px;
-  }
-  h3 {
-    margin-top: 4px;
   }
 
   a {

@@ -1,6 +1,6 @@
 type Query {
   user: User
-  lists: [List!]!
+  lists(from: Time, to: Time): [List!]!
   nbaPlayers: [NBAPlayer!]!
 
   node(id: ID!): Node

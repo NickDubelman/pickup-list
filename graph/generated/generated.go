@@ -68,7 +68,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Lists      func(childComplexity int) int
+		Lists      func(childComplexity int, from *time.Time, to *time.Time) int
 		NbaPlayers func(childComplexity int) int
 		Node       func(childComplexity int, id int) int
 		Nodes      func(childComplexity int, ids []int) int
@@ -94,7 +94,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	User(ctx context.Context) (*db.User, error)
-	Lists(ctx context.Context) ([]*db.List, error)
+	Lists(ctx context.Context, from *time.Time, to *time.Time) ([]*db.List, error)
 	NbaPlayers(ctx context.Context) ([]*db.NBAPlayer, error)
 	Node(ctx context.Context, id int) (db.Noder, error)
 	Nodes(ctx context.Context, ids []int) ([]db.Noder, error)
@@ -229,7 +229,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Lists(childComplexity), true
+		args, err := ec.field_Query_lists_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Lists(childComplexity, args["from"].(*time.Time), args["to"].(*time.Time)), true
 
 	case "Query.nbaPlayers":
 		if e.complexity.Query.NbaPlayers == nil {
@@ -377,7 +382,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var sources = []*ast.Source{
 	{Name: "graph/schema.graphql", Input: `type Query {
   user: User
-  lists: [List!]!
+  lists(from: Time, to: Time): [List!]!
   nbaPlayers: [NBAPlayer!]!
 
   node(id: ID!): Node
@@ -534,6 +539,30 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_lists_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *time.Time
+	if tmp, ok := rawArgs["from"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("from"))
+		arg0, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["from"] = arg0
+	var arg1 *time.Time
+	if tmp, ok := rawArgs["to"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("to"))
+		arg1, err = ec.unmarshalOTime2ᚖtimeᚐTime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["to"] = arg1
 	return args, nil
 }
 
@@ -1108,9 +1137,16 @@ func (ec *executionContext) _Query_lists(ctx context.Context, field graphql.Coll
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_lists_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Lists(rctx)
+		return ec.resolvers.Query().Lists(rctx, args["from"].(*time.Time), args["to"].(*time.Time))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3975,6 +4011,21 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalTime(*v)
 }
 
 func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋNickDubelmanᚋpickupᚑlistᚋdbᚐUser(ctx context.Context, sel ast.SelectionSet, v *db.User) graphql.Marshaler {

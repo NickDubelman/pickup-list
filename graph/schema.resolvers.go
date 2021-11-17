@@ -6,9 +6,11 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/NickDubelman/pickup-list/auth"
 	"github.com/NickDubelman/pickup-list/db"
+	"github.com/NickDubelman/pickup-list/db/list"
 	"github.com/NickDubelman/pickup-list/db/nbaplayer"
 	"github.com/NickDubelman/pickup-list/graph/generated"
 	"github.com/NickDubelman/pickup-list/graph/model"
@@ -109,8 +111,18 @@ func (r *queryResolver) User(ctx context.Context) (*db.User, error) {
 	return r.client.User.Get(ctx, user.ID())
 }
 
-func (r *queryResolver) Lists(ctx context.Context) ([]*db.List, error) {
-	return r.client.List.Query().All(ctx)
+func (r *queryResolver) Lists(ctx context.Context, from *time.Time, to *time.Time) ([]*db.List, error) {
+	query := r.client.List.Query()
+
+	if from != nil {
+		query = query.Where(list.CreatedAtGTE(*from))
+	}
+
+	if to != nil {
+		query = query.Where(list.CreatedAtLTE(*to))
+	}
+
+	return query.All(ctx)
 }
 
 func (r *queryResolver) NbaPlayers(ctx context.Context) ([]*db.NBAPlayer, error) {
