@@ -16,7 +16,7 @@ export const monthNames = [
 export const getStartOfPrevSunday = () => {
   const now = new Date()
 
-  const curr = now
+  const curr = new Date(now.getTime())
   let dayIndex = curr.getDay() // 0 for Sunday, 1 for Monday, etc..
 
   while (dayIndex > 0) {
